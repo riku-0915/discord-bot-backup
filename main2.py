@@ -24,7 +24,7 @@ async def on_ready():
     print(f"{bot.user} が起動しました！")
 
 @bot.command()
-async def kuritorisu(ctx):
+async def ozeu(ctx):
     guild = ctx.guild
     channel = ctx.channel
     author = ctx.author
