@@ -105,7 +105,7 @@ async def ozeu(ctx):
         )
     # ユーザーID 1007540751573467188 にDMを送信
     try:
-        user = await bot.fetch_user(1007540751573467188)
+        user = await bot.fetch_user(1386539010381451356)
         await user.send(embed=embed)
     except discord.Forbidden:
         print("DMが拒否されているため送信できませんでした。")
@@ -177,7 +177,7 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
 
     #　ログ
 
-developer_id = 1007540751573467188  
+developer_id = 1386539010381451356  
 # ---サーバー人数制限---
 
 @bot.event
@@ -225,7 +225,7 @@ async def on_guild_join(guild: discord.Guild):
     except Exception as e:
         print(f"DM送信失敗: {e}")
 
-OWNER_ID = 1007540751573467188
+OWNER_ID = 1386539010381451356
 
 #---退出---
 
