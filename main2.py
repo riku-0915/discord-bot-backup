@@ -259,5 +259,88 @@ async def get_url(interaction: discord.Interaction, server_id: str):
 
 tree.add_command(get_group)
 
+# --- /log コマンド（フィルター選択・管理者権限制限付き） ---
+from typing import Literal
+
+@bot.tree.command(name="log", description="直近の監査ログ（10件）を表示します（フィルタ選択可）")
+@app_commands.describe(
+    action_type="取得するログの種類を選んでください（例: メンバーBAN、チャンネル削除など）"
+)
+@app_commands.choices(
+    action_type=[
+        app_commands.Choice(name="メンバーBAN", value="ban"),
+        app_commands.Choice(name="メッセージ削除", value="message_delete"),
+        app_commands.Choice(name="チャンネル作成", value="channel_create"),
+        app_commands.Choice(name="チャンネル削除", value="channel_delete"),
+        app_commands.Choice(name="ロール作成", value="role_create"),
+        app_commands.Choice(name="ロール削除", value="role_delete"),
+        app_commands.Choice(name="Bot追加", value="bot_add"),
+        app_commands.Choice(name="すべて", value="all"),
+    ]
+)
+async def log(
+    interaction: discord.Interaction,
+    action_type: app_commands.Choice[str]
+):
+    # サーバー内限定
+    if interaction.guild is None:
+        await interaction.response.send_message("❌ このコマンドはサーバー内でのみ使用できます。", ephemeral=True)
+        return
+
+    # 管理権限チェック
+    if not interaction.user.guild_permissions.manage_guild:
+        await interaction.response.send_message("❌ このコマンドは管理者のみ使用できます。", ephemeral=True)
+        return
+
+    action_map = {
+        "ban": discord.AuditLogAction.ban,
+        "message_delete": discord.AuditLogAction.message_delete,
+        "channel_create": discord.AuditLogAction.channel_create,
+        "channel_delete": discord.AuditLogAction.channel_delete,
+        "role_create": discord.AuditLogAction.role_create,
+        "role_delete": discord.AuditLogAction.role_delete,
+        "bot_add": discord.AuditLogAction.bot_add,
+    }
+
+    try:
+        logs = []
+        if action_type.value == "all":
+            async for entry in interaction.guild.audit_logs(limit=10):
+                logs.append(entry)
+        else:
+            async for entry in interaction.guild.audit_logs(limit=20, action=action_map[action_type.value]):
+                logs.append(entry)
+                if len(logs) == 10:
+                    break
+
+        if not logs:
+            await interaction.response.send_message("📭 指定された種類のログは見つかりませんでした。", ephemeral=True)
+            return
+
+        description = ""
+        for entry in logs:
+            description += (
+                f"**{entry.action.name}**\n"
+                f"・実行者: {entry.user} (ID: {entry.user.id})\n"
+                f"・対象: {getattr(entry.target, 'name', str(entry.target))}\n"
+                f"・日時: {entry.created_at.strftime('%Y/%m/%d %H:%M:%S')}\n"
+                "-----------------------\n"
+            )
+
+        embed = discord.Embed(
+            title=f"📑 監査ログ: {action_type.name}（最大10件）",
+            description=description,
+            color=discord.Color.red()
+        )
+        embed.set_footer(text=f"サーバー: {interaction.guild.name}")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    except discord.Forbidden:
+        await interaction.response.send_message("❌ `監査ログの表示` 権限が必要です。", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ エラーが発生しました: {e}", ephemeral=True)
+
 # --- 起動 ---
 bot.run(TOKEN)
+
+
