@@ -438,6 +438,31 @@ async def on_guild_join(guild: discord.Guild):
     await owner.send(embed=embed)
 
 # --- その他、必要なコマンドや機能はここに追加してください ---
+@tree.command(name="leave", description="指定したサーバーからBotを退出させます（開発者用）")
+@app_commands.describe(server_id="退出したいサーバーのID")
+async def leave(interaction: discord.Interaction, server_id: int):
+    if interaction.user.id not in dev_users:
+        await interaction.response.send_message("❌ このコマンドは開発者専用です。", ephemeral=True)
+        return
+
+    guild = bot.get_guild(server_id)
+    if not guild:
+        await interaction.response.send_message("⚠ 指定されたIDのサーバーにBotは参加していません。", ephemeral=True)
+        return
+
+    try:
+        await guild.leave()
+        await interaction.response.send_message(f"✅ サーバー「{guild.name}」 (ID: {guild.id}) から退出しました。", ephemeral=True)
+        owner = await bot.fetch_user(OWNER_ID)
+        embed = discord.Embed(
+            title="🚪 Botが手動でサーバーから退出しました",
+            description=f"サーバー名: {guild.name}\nサーバーID: {guild.id}\n実行者: {interaction.user} (ID: {interaction.user.id})",
+            color=discord.Color.orange(),
+            timestamp=discord.utils.utcnow()
+        )
+        await owner.send(embed=embed)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ 退出に失敗しました: {e}", ephemeral=True)
 
 bot.run(TOKEN)
 
