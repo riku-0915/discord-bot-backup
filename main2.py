@@ -489,24 +489,34 @@ async def bot_stats(interaction: discord.Interaction):
     embed.timestamp = discord.utils.utcnow()
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
+#---自動退出（人数指定）
+@tree.command(name="auto_leave_small_servers", description="指定した人数以下のサーバーから自動退出します")
+@app_commands.describe(threshold="この人数以下のサーバーから退出する（例: 5）")
+async def auto_leave_small_servers(interaction: discord.Interaction, threshold: int):
+    await interaction.response.defer(thinking=True)  # ← 最初に追加
 
-@tree.command(name="auto_leave_small_servers", description="指定した人数以下のサーバーからBotを自動退出させます（開発者専用）")
-@app_commands.describe(min_members="この人数以下のサーバーから退出（例: 5）")
-async def auto_leave_small_servers(interaction: discord.Interaction, min_members: int):
-    if interaction.user.id not in dev_users:
-        await interaction.response.send_message("❌ 開発者専用コマンドです。", ephemeral=True)
+    if interaction.user.id != OWNER_ID:
+        await interaction.followup.send("このコマンドはBotオーナー専用です。", ephemeral=True)
         return
 
-    left = 0
+    left_servers = []
+
     for guild in bot.guilds:
-        if guild.member_count <= min_members:
+        if guild.member_count <= threshold:
             try:
                 await guild.leave()
-                left += 1
+                left_servers.append(f"{guild.name} ({guild.member_count}人)")
+                await asyncio.sleep(1)  # 過負荷回避
             except Exception as e:
-                print(f"[auto_leave] {guild.name} からの退出失敗: {e}")
+                print(f"Failed to leave {guild.name}: {e}")
 
-    await interaction.response.send_message(f"✅ {min_members}人以下のサーバーから {left} 件 退出しました。", ephemeral=True)
+    if left_servers:
+        msg = f"以下のサーバーから退出しました（{len(left_servers)} 件）:\n" + "\n".join(left_servers)
+    else:
+        msg = f"{threshold}人以下のサーバーは見つかりませんでした。"
+
+    await interaction.followup.send(msg)
+
 
 
 bot.run(TOKEN)
