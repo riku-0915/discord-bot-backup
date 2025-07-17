@@ -8,7 +8,6 @@ import json
 import unicodedata
 from pathlib import Path
 from collections import defaultdict
-from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -19,13 +18,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─────────────── 設定ファイルパス ───────────────
 BOT_TOKEN = os.getenv("DISCORD_TOKEN") or "YOUR_TOKEN_HERE"
 MSG_TIMES_FILE = Path("msg_times.json")
 GUILD_CFG_FILE = Path("guild_cfg.json")
 PUNISHED_FILE = Path("punished.json")
 
-# ─────────────── デフォルト設定 ───────────────
 DEFAULTS: dict[str, int] = {
     "spam_interval": 5,
     "spam_count": 6,
@@ -60,6 +57,8 @@ INVITE_RE = re.compile(r"https?://(?:www\.)?discord(?:\.gg|\.com/invite)/[0-9A-Z
 SHORT_RE = re.compile(r"https?://(?:bit\.ly|t\.co|tinyurl\.com|goo\.gl|is\.gd|ow\.ly|buff\.ly|cutt\.ly|rb\.gy|v\.gd|shrtco\.de|git\.io|lnk\.fi|rebrand\.ly)/[^\s <>]{2,}", re.I)
 
 class AntiRaid(commands.Cog):
+    antiraid = app_commands.Group(name="antiraid", description="Anti-Raid 設定")
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.msg_times = load_json(MSG_TIMES_FILE)
@@ -91,7 +90,6 @@ class AntiRaid(commands.Cog):
 
         now = datetime.utcnow().isoformat()
         uid = str(m.author.id)
-        gid = str(m.guild.id)
 
         if uid not in self.msg_times:
             self.msg_times[uid] = []
@@ -151,6 +149,30 @@ class AntiRaid(commands.Cog):
     async def before_cleanup(self):
         await self.bot.wait_until_ready()
 
+    @antiraid.command(name="stats", description="現在の自動対処条件を確認します")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def stats(self, itx: discord.Interaction):
+        cfg = self.cfg(itx.guild_id)
+        await itx.response.send_message(
+            "\n".join(f"**{k}**: {v}" for k, v in cfg.items()),
+            ephemeral=True,
+        )
+
+    @antiraid.command(name="set", description="しきい値を変更します")
+    @app_commands.describe(key="項目名（例: spam_count）", value="新しい数値（例: 5）")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def set_cfg(self, itx: discord.Interaction, key: str, value: int):
+        if key not in DEFAULTS:
+            return await itx.response.send_message("❌ 無効な項目です", ephemeral=True)
+
+        gid = str(itx.guild_id)
+        if gid not in self.guild_cfg:
+            self.guild_cfg[gid] = DEFAULTS.copy()
+
+        self.guild_cfg[gid][key] = value
+        save_json(GUILD_CFG_FILE, self.guild_cfg)
+        await itx.response.send_message(f"✅ `{key}` を **{value}** に更新しました", ephemeral=True)
+
 # ─────────────── Bot起動 ───────────────
 async def main():
     intents = discord.Intents.default()
@@ -175,26 +197,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    @antiraid.command(name="stats", description="現在の自動対処条件を確認します")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def stats(self, itx: discord.Interaction):
-        cfg = self.cfg(itx.guild_id)
-        await itx.response.send_message(
-            "\n".join(f"**{k}**: {v}" for k, v in cfg.items()),
-            ephemeral=True,
-        )
-
-    @antiraid.command(name="set", description="しきい値を変更します")
-    @app_commands.describe(key="項目名（例: spam_count）", value="新しい数値（例: 5）")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def set_cfg(self, itx: discord.Interaction, key: str, value: int):
-        if key not in DEFAULTS:
-            return await itx.response.send_message("❌ 無効な項目です", ephemeral=True)
-
-        gid = str(itx.guild_id)
-        if gid not in self.guild_cfg:
-            self.guild_cfg[gid] = DEFAULTS.copy()
-
-        self.guild_cfg[gid][key] = value
-        save_json(GUILD_CFG_FILE, self.guild_cfg)
-        await itx.response.send_message(f"✅ `{key}` を **{value}** に更新しました", ephemeral=True)
