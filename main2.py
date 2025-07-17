@@ -127,8 +127,8 @@ class AntiRaid(commands.Cog):
 
         embed = discord.Embed(
             title="🚨 自動モデレーション発動",
-            description=f"{msg.author.mention} を **1時間タイムアウト** しました"
-理由 : **{reason}**"""
+            description=f"""{msg.author.mention} を **1時間タイムアウト** しました
+理由 : **{reason}**""",
             color=0xFF5555,
         )
         await msg.channel.send(embed=embed)
