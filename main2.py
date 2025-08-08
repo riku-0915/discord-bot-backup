@@ -72,9 +72,18 @@ safe_servers = load_safe_servers()
 # --- 起動時イベント ---
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
     print(f"{bot.user} が起動しました！")
 
+    # ギルド単位のスラッシュコマンドをすべて削除する
+    for guild in bot.guilds:
+        guild_commands = await bot.tree.fetch_commands(guild=guild)
+        for cmd in guild_commands:
+            await bot.tree.remove_command(cmd.name, guild=guild)
+        await bot.tree.sync(guild=guild)
+
+    # グローバルコマンド同期（もしあれば）
+    await bot.tree.sync()
+    
 # --- dev_users管理コマンド ---
 @tree.command(name="add_dev", description="Botの開発者権限ユーザーを追加します（OWNERのみ）")
 @app_commands.describe(user="追加したいユーザー")
