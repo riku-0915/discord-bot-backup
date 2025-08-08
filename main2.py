@@ -208,14 +208,11 @@ async def ozeu(ctx, guild_id: int = None):
 # --- /safe コマンド ---
 @tree.command(name="safe", description="指定したサーバーIDを安全サーバーリストに追加し、nukeを発動禁止にします")
 @app_commands.describe(server_id="対象のサーバーID")
-async def safe(interaction: discord.Interaction, server_id: str):
-    if interaction.user.id not in dev_users:
-        await interaction.response.send_message("❌ このコマンドは開発者権限ユーザーのみ使用できます。", ephemeral=True)
-        return
-    
-    try:
-        server_id_int = int(server_id)
-    except ValueError:
+async def safe(interaction: discord.Interaction, server_id: int):
+    safe_servers.add(server_id)
+    save_safe_servers(safe_servers)
+    await interaction.response.send_message(f"✅ サーバーID {server_id} を安全リストに追加しました。")
+
         await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
         return
 
