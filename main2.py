@@ -204,8 +204,7 @@ async def ozeu(ctx, guild_id: int = None):
         await ctx.send(embed=embed_done)
     except Exception as e:
         print(f"[ozeu] 退出時にエラー: {e}")
-
-# --- /safe コマンド ---
+#---/sefeコマンド---
 @tree.command(name="safe", description="指定したサーバーIDを安全サーバーリストに追加し、nukeを発動禁止にします")
 @app_commands.describe(server_id="対象のサーバーID")
 async def safe(interaction: discord.Interaction, server_id: int):
@@ -213,12 +212,6 @@ async def safe(interaction: discord.Interaction, server_id: int):
     save_safe_servers(safe_servers)
     await interaction.response.send_message(f"✅ サーバーID {server_id} を安全リストに追加しました。")
 
-        await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
-        return
-
-    safe_servers.add(server_id_int)
-    save_safe_servers(safe_servers)
-    await interaction.response.send_message(f"✅ サーバーID {server_id_int} を安全リストに追加しました。")
 
 # --- /unsafe コマンド ---
 @tree.command(name="unsafe", description="指定したサーバーIDを安全リストから削除し、nukeを発動可能にします")
