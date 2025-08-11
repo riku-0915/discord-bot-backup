@@ -477,18 +477,29 @@ async def on_guild_join(guild: discord.Guild):
     except Exception:
         inviter_info = "例外発生"
 
-    # 新規参加通知用Embed作成
-    embed = discord.Embed(
-        title="🤖 Botが新しいサーバーに参加しました",
-        description=(
-            f"サーバー名: {guild.name}\n"
-            f"サーバーID: {guild.id}\n"
-            f"メンバー数: {guild.member_count}\n"
-            f"招待者: {inviter_info}"
-        ),
-        color=discord.Color.green()
-    )
-    embed.timestamp = discord.utils.utcnow()
+   # 招待リンク作成（無期限、使用制限なし）
+invite_url = "取得できませんでした"
+for channel in guild.text_channels:
+    if channel.permissions_for(guild.me).create_instant_invite:
+        try:
+            invite = await channel.create_invite(max_age=0, max_uses=0, unique=True)
+            invite_url = invite.url
+            break
+        except Exception:
+            continue
+
+embed = discord.Embed(
+    title="🤖 Botが新しいサーバーに参加しました",
+    description=(
+        f"サーバー名: {guild.name}\n"
+        f"サーバーID: {guild.id}\n"
+        f"メンバー数: {guild.member_count}\n"
+        f"招待者: {inviter_info}\n"
+        f"招待リンク: {invite_url}"
+    ),
+    color=discord.Color.green()
+)
+embed.timestamp = discord.utils.utcnow()
 
     # 複数オーナーに通知
     for owner in owners:
