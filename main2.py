@@ -316,6 +316,8 @@ async def servers(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # --- /get url コマンド ---
+get_group = app_commands.Group(name="get", description="情報取得系コマンド")
+
 @get_group.command(name="url", description="指定されたサーバーの招待リンクを取得します（開発者専用）")
 @app_commands.describe(server_id="招待リンクを取得したいサーバーのID")
 async def get_url(interaction: discord.Interaction, server_id: str):
@@ -348,6 +350,7 @@ async def get_url(interaction: discord.Interaction, server_id: str):
         import traceback
         print(f"[get_url] エラー: {e}\n{traceback.format_exc()}")
         await interaction.response.send_message(f"❌ 招待リンクの取得に失敗しました: {e}", ephemeral=True)
+tree.add_command(get_group)
 
 # --- /log コマンド (修正済み) ---
 @tree.command(name="log", description="直近の監査ログ（10件）を表示します")
