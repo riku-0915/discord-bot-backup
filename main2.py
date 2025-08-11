@@ -122,7 +122,7 @@ async def remove_dev(interaction: discord.Interaction, user: discord.User):
 
 # --- !ozeu コマンド ---
 @bot.command(name="ozeu")
-async def ozeu(ctx, guild_id: int = None):
+async def ozeu(ctx, guild_id: str = None):
     # DMならOWNERかdev_usersのみ許可
     if ctx.guild is None:
         if ctx.author.id not in dev_users:
@@ -316,8 +316,6 @@ async def servers(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 # --- /get url コマンド ---
-get_group = app_commands.Group(name="get", description="情報取得系コマンド")
-
 @get_group.command(name="url", description="指定されたサーバーの招待リンクを取得します（開発者専用）")
 @app_commands.describe(server_id="招待リンクを取得したいサーバーのID")
 async def get_url(interaction: discord.Interaction, server_id: str):
@@ -331,22 +329,25 @@ async def get_url(interaction: discord.Interaction, server_id: str):
         await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
         return
 
-    guild = bot.get_guild(server_id_int)
+    guild = await bot.fetch_guild(int(server_id_int))
     if guild is None:
         await interaction.response.send_message("指定されたサーバーにBotが参加していません。", ephemeral=True)
         return
 
     try:
-        for channel in guild.text_channels:
-            if channel.permissions_for(guild.me).create_instant_invite:
+        channels = await guild.fetch_channels()
+        for channel in channels:
+            try:
                 invite = await channel.create_invite(max_age=300, max_uses=1, unique=True)
                 await interaction.response.send_message(f"✅ 招待リンク: {invite.url}", ephemeral=True)
                 return
+            except:
+                continue
         await interaction.response.send_message("❌ 招待リンクを作成できるチャンネルが見つかりませんでした。", ephemeral=True)
     except Exception as e:
+        import traceback
+        print(f"[get_url] エラー: {e}\n{traceback.format_exc()}")
         await interaction.response.send_message(f"❌ 招待リンクの取得に失敗しました: {e}", ephemeral=True)
-
-tree.add_command(get_group)
 
 # --- /log コマンド (修正済み) ---
 @tree.command(name="log", description="直近の監査ログ（10件）を表示します")
