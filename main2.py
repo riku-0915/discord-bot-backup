@@ -441,7 +441,7 @@ async def log(
 # --- サーバー参加イベント ---
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    owner = await bot.fetch_user(OWNER_ID)
+    for owner = await bot.fetch_user(OWNER_ID)
 
     # 小規模サーバー判定（メンバー数5人以下かつオーナーがいない場合はすぐ退出）
     if guild.member_count <= 5:
