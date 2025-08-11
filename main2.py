@@ -441,26 +441,26 @@ async def log(
 # --- サーバー参加イベント ---
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    # 小規模サーバーは退出
+    owner = await bot.fetch_user(OWNER_ID)
+
+    # 小規模サーバー判定（メンバー数5人以下かつオーナーがいない場合はすぐ退出）
     if guild.member_count <= 5:
         try:
-            if guild.owner is None or guild.owner_id == bot.user.id:
+            if guild.owner is None:
                 await guild.leave()
                 embed = discord.Embed(
-                    title="🚪 小規模/不審なサーバーのためBotが退出しました",
-                    description=f"サーバー名: {guild.name} (ID: {guild.id})\nメンバー数: {guild.member_count}",
+                    title="🚪 5人以下サーバーのためBotが退出しました",
+                    description=f"サーバー名: {guild.name} (ID: {guild.id})\nメンバー数: {guild.member_count}\nオーナー不在",
                     color=discord.Color.orange()
                 )
                 embed.timestamp = discord.utils.utcnow()
-
-                # 複数オーナーに送信
-                for owner_id in OWNER_IDS:
-                    owner_user = await bot.fetch_user(owner_id)
-                    await owner_user.send(embed=embed)
+                await owner.send(embed=embed)
                 return
         except Exception:
+            # オーナー情報取得エラーは無視して継続
             pass
 
+    # 招待者の取得（監査ログを利用、Forbiddenなど例外処理含む）
     inviter_info = "不明"
     try:
         async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.bot_add):
@@ -472,8 +472,19 @@ async def on_guild_join(guild: discord.Guild):
     except Exception:
         inviter_info = "例外発生"
 
-    # 参加時の緑色embedは削除して、オーナー取得だけ
-    owner = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
+    embed = discord.Embed(
+        title="🤖 Botが新しいサーバーに参加しました",
+        description=(
+            f"サーバー名: {guild.name}\n"
+            f"サーバーID: {guild.id}\n"
+            f"メンバー数: {guild.member_count}\n"
+            f"招待者: {inviter_info}"
+        ),
+        color=discord.Color.green()
+    )
+    embed.timestamp = discord.utils.utcnow()
+
+    await owner.send(embed=embed)
 
 # --- /leave コマンド ---
 @tree.command(name="leave", description="指定したサーバーからBotを退出させます（開発者用）")
