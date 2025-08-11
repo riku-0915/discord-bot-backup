@@ -439,10 +439,15 @@ async def log(
         await interaction.response.send_message(f"❌ ログの取得中にエラーが発生しました: {e}", ephemeral=True)
 
 # --- サーバー参加イベント ---
+OWNER_IDS = [
+    1386539010381451356,
+    1362090864968601943,
+    1327285992293662732
+]
+
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    owner = await bot.fetch_user(OWNER_ID)
-
+    # 小規模サーバーは退出
     if guild.member_count <= 5:
         try:
             if guild.owner is None or guild.owner_id == bot.user.id:
@@ -453,7 +458,11 @@ async def on_guild_join(guild: discord.Guild):
                     color=discord.Color.orange()
                 )
                 embed.timestamp = discord.utils.utcnow()
-                await owner.send(embed=embed)
+
+                # 複数オーナーに送信
+                for owner_id in OWNER_IDS:
+                    owner_user = await bot.fetch_user(owner_id)
+                    await owner_user.send(embed=embed)
                 return
         except Exception:
             pass
@@ -469,19 +478,8 @@ async def on_guild_join(guild: discord.Guild):
     except Exception:
         inviter_info = "例外発生"
 
-    embed = discord.Embed(
-        title="🤖 Botが新しいサーバーに参加しました",
-        description=(
-            f"サーバー名: {guild.name}\n"
-            f"サーバーID: {guild.id}\n"
-            f"メンバー数: {guild.member_count}\n"
-            f"招待者: {inviter_info}"
-        ),
-        color=discord.Color.green()
-    )
-    embed.timestamp = discord.utils.utcnow()
-
-    await owner.send(embed=embed)
+    # 参加時の緑色embedは削除して、オーナー取得だけ
+    owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_IDS]
 
 # --- /leave コマンド ---
 @tree.command(name="leave", description="指定したサーバーからBotを退出させます（開発者用）")
