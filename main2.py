@@ -441,27 +441,32 @@ async def log(
 # --- サーバー参加イベント ---
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-   for owner_id in OWNER_ID:
-       owner = await bot.fetch_user(OWNER_ID)
+    # OWNER_IDはリストの前提
+    owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
 
-    # 小規模サーバー判定（メンバー数5人以下かつオーナーがいない場合はすぐ退出）
+    # 小規模サーバー判定（5人以下かつオーナー不在なら退出）
     if guild.member_count <= 5:
         try:
             if guild.owner is None:
                 await guild.leave()
                 embed = discord.Embed(
                     title="🚪 5人以下サーバーのためBotが退出しました",
-                    description=f"サーバー名: {guild.name} (ID: {guild.id})\nメンバー数: {guild.member_count}\nオーナー不在",
+                    description=(
+                        f"サーバー名: {guild.name} (ID: {guild.id})\n"
+                        f"メンバー数: {guild.member_count}\n"
+                        "オーナー不在"
+                    ),
                     color=discord.Color.orange()
                 )
                 embed.timestamp = discord.utils.utcnow()
-                await owner.send(embed=embed)
+                # 複数オーナーに送信
+                for owner in owners:
+                    await owner.send(embed=embed)
                 return
         except Exception:
-            # オーナー情報取得エラーは無視して継続
             pass
 
-    # 招待者の取得（監査ログを利用、Forbiddenなど例外処理含む）
+    # 招待者の取得
     inviter_info = "不明"
     try:
         async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.bot_add):
@@ -485,7 +490,8 @@ async def on_guild_join(guild: discord.Guild):
     )
     embed.timestamp = discord.utils.utcnow()
 
-    await owner.send(embed=embed)
+    for owner in owners:
+        await owner.send(embed=embed)
 
 # --- /leave コマンド ---
 @tree.command(name="leave", description="指定したサーバーからBotを退出させます（開発者用）")
