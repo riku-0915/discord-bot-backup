@@ -11,8 +11,12 @@ import platform
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-OWNER_ID = 1386539010381451356 1362090864968601943 1327285992293662732   # あなたのDiscord ID
-
+# オーナーID
+OWNER_ID = [
+    1386539010381451356,
+    1362090864968601943,
+    1327285992293662732
+]
 SPAM_MESSAGE = (
     "# バカどもがw とっととOzeu鯖入っとけw\n"
     "# join Ozeu NOW!!\n"
