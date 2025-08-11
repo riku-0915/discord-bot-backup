@@ -441,32 +441,31 @@ async def log(
 # --- サーバー参加イベント ---
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    # OWNER_IDはリストの前提
+    # まずオーナーのUserオブジェクトをまとめて取得
     owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
 
-    # 小規模サーバー判定（5人以下かつオーナー不在なら退出）
+    print(f"参加サーバー: {guild.name} メンバー数: {guild.member_count}")
+
+    # メンバー数5人以下なら即退出し通知を送る
     if guild.member_count <= 5:
         try:
-            if guild.owner is None:
-                await guild.leave()
-                embed = discord.Embed(
-                    title="🚪 5人以下サーバーのためBotが退出しました",
-                    description=(
-                        f"サーバー名: {guild.name} (ID: {guild.id})\n"
-                        f"メンバー数: {guild.member_count}\n"
-                        "オーナー不在"
-                    ),
-                    color=discord.Color.orange()
-                )
-                embed.timestamp = discord.utils.utcnow()
-                # 複数オーナーに送信
-                for owner in owners:
-                    await owner.send(embed=embed)
-                return
-        except Exception:
-            pass
+            await guild.leave()
+            embed = discord.Embed(
+                title="🚪 5人以下サーバーのためBotが退出しました",
+                description=(
+                    f"サーバー名: {guild.name} (ID: {guild.id})\n"
+                    f"メンバー数: {guild.member_count}"
+                ),
+                color=discord.Color.orange()
+            )
+            embed.timestamp = discord.utils.utcnow()
+            for owner in owners:
+                await owner.send(embed=embed)
+            return
+        except Exception as e:
+            print(f"退出処理でエラー発生: {e}")
 
-    # 招待者の取得
+    # 招待者の取得（監査ログから）
     inviter_info = "不明"
     try:
         async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.bot_add):
@@ -478,6 +477,7 @@ async def on_guild_join(guild: discord.Guild):
     except Exception:
         inviter_info = "例外発生"
 
+    # 新規参加通知用Embed作成
     embed = discord.Embed(
         title="🤖 Botが新しいサーバーに参加しました",
         description=(
@@ -490,6 +490,7 @@ async def on_guild_join(guild: discord.Guild):
     )
     embed.timestamp = discord.utils.utcnow()
 
+    # 複数オーナーに通知
     for owner in owners:
         await owner.send(embed=embed)
 
