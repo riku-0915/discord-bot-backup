@@ -439,12 +439,6 @@ async def log(
         await interaction.response.send_message(f"❌ ログの取得中にエラーが発生しました: {e}", ephemeral=True)
 
 # --- サーバー参加イベント ---
-OWNER_IDS = [
-    1386539010381451356,
-    1362090864968601943,
-    1327285992293662732
-]
-
 @bot.event
 async def on_guild_join(guild: discord.Guild):
     # 小規模サーバーは退出
@@ -479,7 +473,7 @@ async def on_guild_join(guild: discord.Guild):
         inviter_info = "例外発生"
 
     # 参加時の緑色embedは削除して、オーナー取得だけ
-    owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_IDS]
+    owner = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
 
 # --- /leave コマンド ---
 @tree.command(name="leave", description="指定したサーバーからBotを退出させます（開発者用）")
