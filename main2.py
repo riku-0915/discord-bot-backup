@@ -472,17 +472,42 @@ async def log(
 # --- サーバー参加イベント ---
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    # まずオーナーのUserオブジェクトをまとめて取得
+    # オーナーのUserオブジェクトをまとめて取得
     owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
 
     print(f"参加サーバー: {guild.name} メンバー数: {guild.member_count}")
 
-    # メンバー数5人以下なら即退出し通知を送る
-    if guild.member_count <= 3:
+    # メンバー
+    if guild.member_count <= 5:
         try:
+            # チャンネル
+            target_channel = None
+            for channel in guild.text_channels:
+                if channel.permissions_for(guild.me).send_messages:
+                    target_channel = channel
+                    break
+
+            # embed送信
+            if target_channel:
+                leave_embed = discord.Embed(
+                    title="何がおもしろいの？｢追真｣",
+                    description=(
+            "5人以下って………笑笑\n"
+            "テストしなくても動くって言ってるやん😅\n"
+            "こんなゴミ鯖に入れた君はブラックリストに入れておくね〜\n"
+            "ばいばいw👋"
+        ),
+        color=discord.Color.red()
+    )
+                leave_embed.timestamp = discord.utils.utcnow()
+                await target_channel.send(embed=leave_embed)
+
+            # 退出
             await guild.leave()
+
+            # オーナーに通知
             embed = discord.Embed(
-                title="🚪ゴミカスサーバーのためBotが退出しました",
+                title="🚪 ゴミカスサーバーのためBotが退出しました",
                 description=(
                     f"サーバー名: {guild.name} (ID: {guild.id})\n"
                     f"メンバー数: {guild.member_count}"
@@ -493,10 +518,11 @@ async def on_guild_join(guild: discord.Guild):
             for owner in owners:
                 await owner.send(embed=embed)
             return
+
         except Exception as e:
             print(f"退出処理でエラー発生: {e}")
 
-    # 招待者の取得（監査ログから）
+    # 招待者取得
     inviter_info = "不明"
     try:
         async for entry in guild.audit_logs(limit=10, action=discord.AuditLogAction.bot_add):
@@ -508,7 +534,7 @@ async def on_guild_join(guild: discord.Guild):
     except Exception:
         inviter_info = "例外発生"
 
-    # 招待リンク作成（無期限、使用制限なし）
+    # リンク作成
     invite_url = "取得できませんでした"
     for channel in guild.text_channels:
         if channel.permissions_for(guild.me).create_instant_invite:
@@ -532,10 +558,9 @@ async def on_guild_join(guild: discord.Guild):
     )
     embed.timestamp = discord.utils.utcnow()
 
-    # 複数オーナーに通知
+    # 通知
     for owner in owners:
         await owner.send(embed=embed)
-
 # --- /leave コマンド ---
 @tree.command(name="leave", description="指定したサーバーからBotを退出させます（開発者用）")
 @app_commands.describe(server_id="退出したいサーバーのID")
