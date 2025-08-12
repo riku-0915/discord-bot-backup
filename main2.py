@@ -490,7 +490,7 @@ async def on_guild_join(guild: discord.Guild):
             # embed送信
             if target_channel:
                 leave_embed = discord.Embed(
-                    title="何がおもしろいの？｢追真｣",
+                    title="何がおもしろいの？｢笑｣",
                     description=(
             "5人以下って………笑笑\n"
             "テストしなくても動くって言ってるやん😅\n"
