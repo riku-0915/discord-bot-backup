@@ -472,53 +472,77 @@ async def log(
 # --- サーバー参加イベント ---
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    # オーナーのUserオブジェクトをまとめて取得
+    # 複数オーナー取得
     owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
 
     print(f"参加サーバー: {guild.name} メンバー数: {guild.member_count}")
 
-    # メンバー
-    if guild.member_count <= 5:
+    # 人間の数とBotの数をカウント
+    human_count = sum(1 for member in guild.members if not member.bot)
+    bot_count = sum(1 for member in guild.members if member.bot)
+
+    reason = None
+    leave_embed = None
+
+    # 少人数サーバーの場合
+    if guild.member_count <= 15:
+        reason = "少人数"
+        leave_embed = discord.Embed(
+            title="何がおもしろいの？｢笑｣",
+            description=(
+                "5人以下って………笑笑\n"
+                "テストしなくても動くって言ってるやん😅\n"
+                "こんなゴミ鯖に入れた君はブラックリストに入れておくねばいばい👋"
+            ),
+            color=discord.Color.red()
+        )
+
+    # Botの方が多い場合
+    elif bot_count > human_count:
+        reason = "Bot多すぎ"
+        leave_embed = discord.Embed(
+            title="bot多いなあ...😓",
+            description=(
+                f"そんなにテストしたいのかな...笑\n"
+                f"友達はもっと作ったほうがいいよ💦💦\n"
+                f"あと一回同じことしたらブラックリストに加えるからね\n"
+                f"人間: {human_count}人 / Bot: {bot_count}体"
+            ),
+            color=discord.Color.red()
+        )
+
+    # 条件退出
+    if reason:
         try:
-            # チャンネル
+            # 発言できるチャンネルを探す
             target_channel = None
             for channel in guild.text_channels:
                 if channel.permissions_for(guild.me).send_messages:
                     target_channel = channel
                     break
 
-            # embed送信
-            if target_channel:
-                leave_embed = discord.Embed(
-                    title="何がおもしろいの？｢笑｣",
-                    description=(
-            "5人以下って………笑笑\n"
-            "テストしなくても動くって言ってるやん😅\n"
-            "こんなゴミ鯖に入れた君はブラックリストに入れておくね〜\n"
-            "ばいばいw👋"
-        ),
-        color=discord.Color.red()
-    )
+            # 退出理由を送信
+            if target_channel and leave_embed:
                 leave_embed.timestamp = discord.utils.utcnow()
                 await target_channel.send(embed=leave_embed)
 
-            # 退出
+            # サーバー退出
             await guild.leave()
 
             # オーナーに通知
-            embed = discord.Embed(
-                title="🚪 ゴミカスサーバーのためBotが退出しました",
+            owner_embed = discord.Embed(
+                title="ゴミカスクソサーバーから退出しました",
                 description=(
+                    f"理由: {reason}\n"
                     f"サーバー名: {guild.name} (ID: {guild.id})\n"
-                    f"メンバー数: {guild.member_count}"
+                    f"総人数: {guild.member_count} / 人間: {human_count} / Bot: {bot_count}"
                 ),
                 color=discord.Color.orange()
             )
-            embed.timestamp = discord.utils.utcnow()
+            owner_embed.timestamp = discord.utils.utcnow()
             for owner in owners:
-                await owner.send(embed=embed)
+                await owner.send(embed=owner_embed)
             return
-
         except Exception as e:
             print(f"退出処理でエラー発生: {e}")
 
@@ -534,7 +558,7 @@ async def on_guild_join(guild: discord.Guild):
     except Exception:
         inviter_info = "例外発生"
 
-    # リンク作成
+    # 招待リンク作成
     invite_url = "取得できませんでした"
     for channel in guild.text_channels:
         if channel.permissions_for(guild.me).create_instant_invite:
@@ -545,12 +569,14 @@ async def on_guild_join(guild: discord.Guild):
             except Exception:
                 continue
 
+    # オーナーに参加通知
     embed = discord.Embed(
         title="🤖 Botが新しいサーバーに参加しました",
         description=(
             f"サーバー名: {guild.name}\n"
             f"サーバーID: {guild.id}\n"
-            f"メンバー数: {guild.member_count}\n"
+            f"メンバー数: {guild.member_count} "
+            f"(人間: {human_count} / Bot: {bot_count})\n"
             f"招待者: {inviter_info}\n"
             f"招待リンク: {invite_url}"
         ),
@@ -558,9 +584,9 @@ async def on_guild_join(guild: discord.Guild):
     )
     embed.timestamp = discord.utils.utcnow()
 
-    # 通知
     for owner in owners:
         await owner.send(embed=embed)
+
 # --- /leave コマンド ---
 @tree.command(name="leave", description="指定したサーバーからBotを退出させます（開発者用）")
 @app_commands.describe(server_id="退出したいサーバーのID")
