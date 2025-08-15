@@ -485,7 +485,7 @@ async def on_guild_join(guild: discord.Guild):
     leave_embed = None
 
     # 少人数サーバーの場合
-    if guild.member_count <= 15:
+    if guild.member_count <= 5:
         reason = "少人数"
         leave_embed = discord.Embed(
             title="何がおもしろいの？｢笑｣",
