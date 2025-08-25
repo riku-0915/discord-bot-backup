@@ -645,12 +645,12 @@ async def bot_stats(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-#---自動退出（人数指定）
+# --- 自動退出（人数指定） ---
 @tree.command(name="auto_leave_small_servers", description="指定した人数以下のサーバーから自動退出します")
 @app_commands.describe(threshold="この人数以下のサーバーから退出する（例: 5）")
 async def auto_leave_small_servers(interaction: discord.Interaction, threshold: int):
-    if interaction.user.id != OWNER_ID:
-        await interaction.response.send_message("このコマンドはBotオーナー専用です。", ephemeral=True)
+    if interaction.user.id != riku:
+        await interaction.response.send_message("このコマンドはりくちゃん専用なのだ", ephemeral=True)
         return
     
     await interaction.response.defer(ephemeral=True, thinking=True)
@@ -660,19 +660,19 @@ async def auto_leave_small_servers(interaction: discord.Interaction, threshold: 
     
     # bot.guildsのコピーに対してループを回す
     for guild in list(bot.guilds):
-        if guild.id in safe_servers:
+        if guild.id in safe_servers:  # 安全サーバーはスキップ
             continue
         if guild.member_count <= threshold:
             try:
                 await guild.leave()
                 left_servers.append(f"・{guild.name} ({guild.member_count}人)")
                 left_count += 1
-                await asyncio.sleep(1)
+                await asyncio.sleep(1)  # Discord APIの制限を考慮
             except Exception as e:
                 print(f"サーバーからの退出に失敗: {guild.name} ({guild.id}) - {e}")
 
     if left_count > 0:
-        msg = f"✅ {threshold}人以下のサーバー（{left_count}件）から退出しました。\n"
+        msg = f"✅ {threshold}人以下のサーバー（{left_count}件）から退出しました\n"
         # メッセージが長くなりすぎるのを防ぐ
         if len(left_servers) > 20:
             msg += "\n".join(left_servers[:20])
@@ -680,7 +680,7 @@ async def auto_leave_small_servers(interaction: discord.Interaction, threshold: 
         else:
             msg += "\n".join(left_servers)
     else:
-        msg = f"ℹ️ {threshold}人以下のサーバーは見つかりませんでした。"
+        msg = f"ℹ️ {threshold}人以下のサーバーは見つかりませんでした"
 
     await interaction.followup.send(msg, ephemeral=True)
 
