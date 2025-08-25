@@ -20,7 +20,7 @@ OWNER_ID = [
 SPAM_MESSAGE = (
     "# バカどもがw とっととOzeu鯖入っとけw\n"
     "# join Ozeu NOW!!\n"
-    "discord.gg/ozetudo\n"
+    "https://discord.gg/eVWvxQzK5y\n"
     "https://i.imgur.com/NbBGFcf.mp4\n"
     "https://media.discordapp.net/attachments/1341829977850646668/1353001058405978172/IMB_DZBN6p.gif?ex=67e00fed&is=67debe6d&hm=b07d1cf915c35fa1871b655f91d3738eba09ea05683a1abf5b883b0598f3b92a&\n"
     "https://cdn.discordapp.com/attachments/1341829977850646668/1353001058405978172/IMB_DZBN6p.gif?ex=6892b32d&is=689161ad&hm=f90a264369763416933c84ca7abc91235d7c0e67708237ca8bdd8d868700978b\n"
