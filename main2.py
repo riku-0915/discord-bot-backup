@@ -333,20 +333,20 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
         await interaction.response.send_message(f"❌ BANに失敗しました: {e}", ephemeral=True)
 
 # --- /servers コマンド ---
-@tree.command(name="servers", description="サーバー一覧(開発者専用)")
+@tree.command(name="servers", description="サーバー一覧（りくちゃん専用）")
 async def servers(interaction: discord.Interaction):
-    if interaction.user.id not in dev_users:
-        await interaction.response.send_message("このコマンドはBotの開発者のみ使えます。", ephemeral=True)
+    if interaction.user.id != riku:
+        await interaction.response.send_message("このコマンドはりくちゃん専用です", ephemeral=True)
         return
+    
     guilds = bot.guilds
     server_list = "\n".join(f"{guild.name} - ID: `{guild.id}`" for guild in guilds)
     embed = discord.Embed(
         title=f"🤖 Botが入っているサーバー一覧（{len(guilds)}件）",
-        description=server_list or "現在サーバーに参加していません。",
+        description=server_list or "現在サーバーに参加していません",
         color=discord.Color.blue()
     )
     await interaction.response.send_message(embed=embed, ephemeral=True)
-
 # --- /get url コマンド ---
 get_group = app_commands.Group(name="get", description="情報取得系コマンド")
 
