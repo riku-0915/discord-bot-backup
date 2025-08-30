@@ -358,19 +358,29 @@ get_group = app_commands.Group(name="get", description="情報取得系コマン
 @get_group.command(name="url", description="指定されたサーバーの招待リンクを取得します（開発者専用）")
 @app_commands.describe(server_id="招待リンクを取得したいサーバーのID")
 async def get_url(interaction: discord.Interaction, server_id: str):
-    if interaction.user.id not in dev_users:
-        await interaction.response.send_message("このコマンドはBotの開発者のみ使えます。", ephemeral=True)
+    # 開発者判定
+    if interaction.user.id not in OWNER_ID:
+        await interaction.response.send_message(
+            "❌ このコマンドはBotの開発者のみ使えます", 
+            ephemeral=True
+        )
         return
 
     try:
-        server_id_int = str(server_id)
+        server_id_int = int(server_id)  # ← ここは int に変換すればOK
     except ValueError:
-        await interaction.response.send_message("❌ 無効なサーバーIDです。数字のみを入力してください。", ephemeral=True)
+        await interaction.response.send_message(
+            "❌ 無効なサーバーIDです。数字のみを入力してください", 
+            ephemeral=True
+        )
         return
 
-    guild = await bot.fetch_guild(int(server_id_int))
+    guild = await bot.fetch_guild(server_id_int)
     if guild is None:
-        await interaction.response.send_message("指定されたサーバーにBotが参加していません。", ephemeral=True)
+        await interaction.response.send_message(
+            "❌ 指定されたサーバーにBotが参加していません", 
+            ephemeral=True
+        )
         return
 
     try:
@@ -378,15 +388,26 @@ async def get_url(interaction: discord.Interaction, server_id: str):
         for channel in channels:
             try:
                 invite = await channel.create_invite(max_age=300, max_uses=1, unique=True)
-                await interaction.response.send_message(f"✅ 招待リンク: {invite.url}", ephemeral=True)
+                await interaction.response.send_message(
+                    f"✅ 招待リンク: {invite.url}", 
+                    ephemeral=True
+                )
                 return
             except:
                 continue
-        await interaction.response.send_message("❌ 招待リンクを作成できるチャンネルが見つかりませんでした。", ephemeral=True)
+        await interaction.response.send_message(
+            "❌ 招待リンクを作成できるチャンネルが見つかりませんでした", 
+            ephemeral=True
+        )
     except Exception as e:
         import traceback
         print(f"[get_url] エラー: {e}\n{traceback.format_exc()}")
-        await interaction.response.send_message(f"❌ 招待リンクの取得に失敗しました: {e}", ephemeral=True)
+        await interaction.response.send_message(
+            f"❌ 招待リンクの取得に失敗しました: {e}", 
+            ephemeral=True
+        )
+        
+# コマンドグループを追加
 tree.add_command(get_group)
 
 # --- /log コマンド (修正済み) ---
