@@ -335,7 +335,7 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
 # --- /servers コマンド ---
 @tree.command(name="servers", description="サーバー一覧(開発者専用)")
 async def servers(interaction: discord.Interaction):
-    if interaction.user.id != RIKU_ID:
+    if interaction.user.id != riku:
         await interaction.response.send_message(
             "このコマンドはBotの開発者のみ使えます", 
             ephemeral=True
