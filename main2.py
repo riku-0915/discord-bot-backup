@@ -12,11 +12,7 @@ import platform
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 # オーナーID
-OWNER_ID = [
-    1406978681481461941,
-    1362090864968601943,
-    1386979993686638635,
-]
+OWNER_ID = 1406978681481461941
 riku = 1406978681481461941
 SPAM_MESSAGE = (
     "# バカどもがw とっととOzeu鯖入っとけw\n"
