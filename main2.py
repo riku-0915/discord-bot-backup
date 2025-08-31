@@ -121,7 +121,7 @@ async def remove_dev(interaction: discord.Interaction, user: discord.User):
 @bot.command(name="ozeu")
 async def ozeu(ctx, guild_id: str = None):
     # DM or サーバー共通でOWNER_IDチェック
-    if ctx.author.id not in OWNER_ID:
+    if ctx.author.id not in riku:
         await ctx.send("❌ このコマンドはBotのオーナーのみ使用できます。")
         return
 
